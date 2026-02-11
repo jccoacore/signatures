@@ -2,27 +2,31 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>One-Time Firestore Import</title>
+<title>Fast CSV Import</title>
 <style>
 body { font-family: Arial; margin:40px; }
 button { padding:10px 20px; margin-top:10px; }
+#log { margin-top:20px; white-space:pre-wrap; }
 </style>
 </head>
 <body>
 
-<h2>🔥 One-Time CSV Import Tool</h2>
-<p>This will CLEAR existing flats collection and import fresh data.</p>
+<h2>🚀 Fast Firestore Import Tool</h2>
 
 <input type="file" id="csvFile" accept=".csv">
 <br>
 <button onclick="startImport()">Start Import</button>
 
+<div id="log"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getFirestore, collection, doc,
+  writeBatch, getDocs, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔴 REPLACE WITH YOUR FIREBASE CONFIG */
+/* 🔴 REPLACE WITH YOUR CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
   authDomain: "jcc-block-manager.firebaseapp.com",
@@ -37,47 +41,55 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
+const log = document.getElementById("log");
+
+function writeLog(msg){
+  log.innerText += msg + "\n";
+}
 
 window.startImport = async function() {
 
   const file = document.getElementById("csvFile").files[0];
   if(!file){
-    alert("Upload CSV first.");
+    writeLog("❌ No file selected.");
     return;
   }
 
-  if(!confirm("This will DELETE all existing flats. Continue?")) return;
+  if(!confirm("This will delete old flats. Continue?")) return;
 
-  // 1️⃣ Delete existing data
+  writeLog("Clearing old data...");
+
+  // Delete old docs
   const snapshot = await getDocs(collection(db,"flats"));
   for (let d of snapshot.docs) {
-    await deleteDoc(doc(db,"flats",d.id));
+    await deleteDoc(d.ref);
   }
 
-  console.log("Old data cleared.");
+  writeLog("Old data cleared.");
 
-  // 2️⃣ Read CSV
   const text = await file.text();
   const rows = text.split("\n");
+  const headers = rows[0].split(",").map(h => h.trim());
 
-  // Identify column indexes
-  const headers = rows[0].split(",");
   const flatIndex = headers.indexOf("Flat");
   const occupantIndex = headers.indexOf("Occupant Type");
 
   if(flatIndex === -1 || occupantIndex === -1){
-    alert("Required columns not found.");
+    writeLog("❌ Required columns not found.");
     return;
   }
 
-  let importCount = 0;
+  let totalImported = 0;
+  let batch = writeBatch(db);
+  let batchCount = 0;
 
   for(let i=1; i<rows.length; i++){
-    const cols = rows[i].split(",");
-    if(cols.length < headers.length) continue;
 
-    const flatRaw = cols[flatIndex].trim();
-    const occupant = cols[occupantIndex].trim();
+    const cols = rows[i].split(",");
+    if(cols.length <= flatIndex) continue;
+
+    const flatRaw = cols[flatIndex]?.trim();
+    const occupant = cols[occupantIndex]?.trim();
 
     if(!flatRaw) continue;
 
@@ -89,17 +101,33 @@ window.startImport = async function() {
 
     if(!VALID_BLOCKS.includes(block) || isNaN(number)) continue;
 
-    await addDoc(collection(db,"flats"),{
-      block: block,
-      number: number,
-      occupant: occupant,
-      completed: false
+    const newDocRef = doc(collection(db,"flats"));
+
+    batch.set(newDocRef,{
+      block,
+      number,
+      occupant,
+      completed:false
     });
 
-    importCount++;
+    batchCount++;
+    totalImported++;
+
+    // Commit every 450 writes (safe margin under 500 limit)
+    if(batchCount === 450){
+      await batch.commit();
+      writeLog("Committed 450 records...");
+      batch = writeBatch(db);
+      batchCount = 0;
+    }
   }
 
-  alert("Import Completed. Flats imported: " + importCount);
+  if(batchCount > 0){
+    await batch.commit();
+  }
+
+  writeLog("✅ Import completed.");
+  writeLog("Total flats imported: " + totalImported);
 };
 </script>
 
