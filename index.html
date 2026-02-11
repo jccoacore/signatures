@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Shared Block Manager</title>
+<style>
+body { font-family: Arial; margin:20px; }
+textarea { width:100%; height:70px; padding:10px; }
+button { padding:6px 12px; margin:5px; }
+.grid {
+  display:grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap:10px;
+  margin-top:20px;
+}
+.column {
+  border:1px solid #ccc;
+  min-height:200px;
+  padding:5px;
+}
+.column h4 {
+  text-align:center;
+  background:#f2f2f2;
+  margin:0;
+  padding:5px;
+}
+.cell {
+  display:flex;
+  justify-content:space-between;
+  padding:3px;
+  border-bottom:1px solid #eee;
+}
+.remove { color:red; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h2>Shared Block Manager (Realtime)</h2>
+
+<textarea id="inputData" placeholder="Enter:
+A 1101
+A 201"></textarea>
+<br>
+<button onclick="addData()">Add</button>
+
+<input type="text" id="search" placeholder="Search..." oninput="searchData()">
+
+<div class="grid" id="grid"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* 🔴 REPLACE THIS WITH YOUR CONFIG */
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_MSG_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const grid = document.getElementById("grid");
+
+function render(data) {
+  grid.innerHTML = "";
+
+  const blocks = {};
+  for (let i=65;i<=90;i++) {
+    blocks[String.fromCharCode(i)] = [];
+  }
+
+  data.forEach(item=>{
+    blocks[item.block].push(item);
+  });
+
+  for (let letter in blocks) {
+    blocks[letter].sort((a,b)=>a.number-b.number);
+
+    const col = document.createElement("div");
+    col.className="column";
+    col.innerHTML="<h4>"+letter+"</h4>";
+
+    blocks[letter].forEach(entry=>{
+      const row=document.createElement("div");
+      row.className="cell";
+      row.innerHTML=`
+        <span>${letter} ${entry.number}</span>
+        <span class="remove" data-id="${entry.id}">❌</span>
+      `;
+      row.querySelector(".remove").onclick=()=>{
+        deleteDoc(doc(db,"blocks",entry.id));
+      };
+      col.appendChild(row);
+    });
+
+    grid.appendChild(col);
+  }
+}
+
+window.addData = async function() {
+  const input=document.getElementById("inputData").value.trim();
+  if(!input) return;
+
+  const lines=input.split("\n");
+
+  for(let line of lines){
+    const parts=line.trim().split(/\s+/);
+    if(parts.length<2) continue;
+
+    const block=parts[0].toUpperCase();
+    const number=parseInt(parts[1]);
+    if(isNaN(number)) continue;
+
+    // Prevent duplicates
+    const snapshot=await new Promise(resolve=>{
+      onSnapshot(collection(db,"blocks"),snap=>{
+        resolve(snap);
+      });
+    });
+
+    let exists=false;
+    snapshot.forEach(doc=>{
+      const d=doc.data();
+      if(d.block===block && d.number===number) exists=true;
+    });
+
+    if(!exists){
+      await addDoc(collection(db,"blocks"),{
+        block:block,
+        number:number
+      });
+    }
+  }
+
+  document.getElementById("inputData").value="";
+}
+
+function searchData(){
+  const q=document.getElementById("search").value.toLowerCase();
+  document.querySelectorAll(".cell").forEach(c=>{
+    c.style.display=c.textContent.toLowerCase().includes(q)?"flex":"none";
+  });
+}
+
+onSnapshot(collection(db,"blocks"),snapshot=>{
+  const data=[];
+  snapshot.forEach(doc=>{
+    data.push({id:doc.id,...doc.data()});
+  });
+  render(data);
+});
+</script>
+
+</body>
+</html>
