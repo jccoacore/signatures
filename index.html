@@ -9,39 +9,64 @@
 body { font-family: Arial; margin:10px; }
 h2 { text-align:center; }
 
-input, textarea {
-  width:100%;
-  padding:6px;
-  margin-bottom:5px;
-  font-size:13px;
-}
-
-button {
-  padding:6px 10px;
-  margin:3px;
+/* Compact Top Stats */
+.stat-box {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
   font-size:12px;
+}
+
+.stat-item {
+  background:#f3f3f3;
+  padding:5px 8px;
+  border-radius:6px;
+}
+
+/* Smaller Dashboard Cards */
+.summary-card {
+  min-width:85px;
+  padding:6px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  text-align:center;
+  font-size:10px;
+  background:#fafafa;
   cursor:pointer;
-  border:1px solid #ccc;
-  background:#f5f5f5;
+  transition:0.2s;
 }
 
-.progress-container {
-  height:8px;
+.summary-card.active {
+  border:2px solid #1976d2;
+  background:#e3f2fd;
+}
+
+.summary-card.inactive {
+  opacity:0.4;
+}
+
+.summary-percent {
+  font-weight:bold;
+  font-size:11px;
+}
+
+.summary-bar-bg {
+  height:4px;
   background:#ddd;
-  border-radius:4px;
-  overflow:hidden;
-  margin-bottom:10px;
+  margin-top:3px;
 }
 
-.progress-bar {
-  height:8px;
+.summary-bar-fill {
+  height:4px;
   background:#4caf50;
 }
 
+/* Grid */
 .grid {
   display:grid;
-  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
-  gap:12px;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap:10px;
 }
 
 .column {
@@ -52,25 +77,25 @@ button {
 
 .column h4 {
   margin:0;
-  padding:6px;
+  padding:5px;
   background:#f3f3f3;
   text-align:center;
-  font-size:12px;
+  font-size:11px;
 }
 
 .block-progress-bg {
-  height:6px;
+  height:5px;
   background:#ddd;
 }
 
 .block-progress-fill {
-  height:6px;
+  height:5px;
   background:#4caf50;
 }
 
 .cell {
-  padding:4px;
-  font-size:11px;
+  padding:3px;
+  font-size:10px;
   border-bottom:1px solid #eee;
   text-align:center;
   cursor:pointer;
@@ -81,49 +106,38 @@ button {
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
-.block-btn.active { background:#1976d2; color:white; }
-.block-btn.inactive { background:#e0e0e0; color:#888; }
+input, textarea {
+  width:100%;
+  padding:5px;
+  margin-bottom:5px;
+  font-size:12px;
+}
 
-.filter-btn.active { background:#1976d2; color:white; }
-
-.summary-card {
-  min-width:120px;
-  padding:8px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  text-align:center;
+button {
+  padding:5px 8px;
+  margin:3px;
   font-size:11px;
-  background:#fafafa;
+  cursor:pointer;
+  border:1px solid #ccc;
+  background:#f5f5f5;
 }
 
-.summary-percent {
-  font-weight:bold;
-  font-size:13px;
+.filter-btn.active {
+  background:#1976d2;
+  color:white;
 }
 
-.summary-bar-bg {
-  height:5px;
+.progress-container {
+  height:6px;
   background:#ddd;
-  margin-top:4px;
-}
-
-.summary-bar-fill {
-  height:5px;
-  background:#4caf50;
-}
-
-.stat-box {
-  display:flex;
-  gap:15px;
-  flex-wrap:wrap;
+  border-radius:4px;
+  overflow:hidden;
   margin-bottom:8px;
-  font-size:13px;
 }
 
-.stat-item {
-  background:#f3f3f3;
-  padding:6px 10px;
-  border-radius:6px;
+.progress-bar {
+  height:6px;
+  background:#4caf50;
 }
 
 #login { margin-top:80px; text-align:center; }
@@ -147,6 +161,7 @@ button {
 <p>Logged in as: <span id="userEmail"></span></p>
 <button onclick="logout()">Logout</button>
 
+<!-- Society Stats -->
 <div class="stat-box">
   <div class="stat-item">Total: <span id="socTotal">0</span></div>
   <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
@@ -159,14 +174,11 @@ button {
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<div id="blockSummary" style="display:flex;overflow-x:auto;gap:10px;margin-bottom:15px;"></div>
+<!-- 🔥 BLOCK DASHBOARD (FILTER NOW) -->
+<div id="blockSummary" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
 
 <input type="text" id="searchBox" placeholder="Search flat number">
 
-<!-- 🔥 BLOCK FILTERS -->
-<div id="blockFilters"></div>
-
-<!-- 🔥 OWNER / TENANT FILTERS -->
 <div>
   <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
   <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
@@ -217,10 +229,12 @@ const grid=document.getElementById("grid");
 
 /* LOGIN */
 window.login = async () => {
-  const emailInput = document.getElementById("email").value;
-  const passwordInput = document.getElementById("password").value;
   try {
-    await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+    await signInWithEmailAndPassword(
+      auth,
+      document.getElementById("email").value,
+      document.getElementById("password").value
+    );
   } catch (err) {
     document.getElementById("loginError").innerText = err.message;
   }
@@ -233,7 +247,6 @@ onAuthStateChanged(auth, user => {
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="block";
     document.getElementById("userEmail").innerText=user.email;
-    renderBlockFilters();
   } else {
     document.getElementById("login").style.display="block";
     document.getElementById("app").style.display="none";
@@ -269,17 +282,16 @@ function applyFilter(data){
 
 /* Render */
 function render(){
-  grid.innerHTML="";
   renderSocietyStats();
   renderBlockSummary();
 
+  grid.innerHTML="";
   const filtered=applyFilter(fullData);
 
   VALID_BLOCKS.forEach(letter=>{
     if(!activeBlocks.has(letter)) return;
 
     const flats=filtered.filter(d=>d.block===letter);
-
     const total=fullData.filter(d=>d.block===letter).length;
     const completed=fullData.filter(d=>d.block===letter && d.completed).length;
     const owners=fullData.filter(d=>d.block===letter && d.occupant==="Owner").length;
@@ -289,10 +301,8 @@ function render(){
     const col=document.createElement("div");
     col.className="column";
     col.innerHTML=`
-      <h4>
-        ${letter} (${completed}/${total}) ${percent}%
-        <br>O:${owners} | T:${tenants}
-      </h4>
+      <h4>${letter} (${completed}/${total}) ${percent}%<br>
+      O:${owners} | T:${tenants}</h4>
       <div class="block-progress-bg">
         <div class="block-progress-fill" style="width:${percent}%"></div>
       </div>
@@ -314,25 +324,41 @@ function render(){
   });
 }
 
-/* Block Filters */
-function renderBlockFilters(){
-  const container=document.getElementById("blockFilters");
+/* Dashboard as Filter */
+function renderBlockSummary(){
+  const container=document.getElementById("blockSummary");
   container.innerHTML="";
-  VALID_BLOCKS.forEach(letter=>{
-    const btn=document.createElement("button");
-    btn.innerText=letter;
-    btn.className="block-btn";
-    if(activeBlocks.has(letter)) btn.classList.add("active");
-    else btn.classList.add("inactive");
 
-    btn.onclick=()=>{
+  VALID_BLOCKS.forEach(letter=>{
+    const flats=fullData.filter(d=>d.block===letter);
+    const total=flats.length;
+    const completed=flats.filter(d=>d.completed).length;
+    const owners=flats.filter(d=>d.occupant==="Owner").length;
+    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
+    const percent=total?Math.round((completed/total)*100):0;
+
+    const card=document.createElement("div");
+    card.className="summary-card";
+    if(activeBlocks.has(letter)) card.classList.add("active");
+    else card.classList.add("inactive");
+
+    card.innerHTML=`
+      <div><strong>${letter}</strong></div>
+      <div class="summary-percent">${percent}%</div>
+      <div>${completed}/${total}</div>
+      <div>O:${owners} | T:${tenants}</div>
+      <div class="summary-bar-bg">
+        <div class="summary-bar-fill" style="width:${percent}%"></div>
+      </div>
+    `;
+
+    card.onclick=()=>{
       if(activeBlocks.has(letter)) activeBlocks.delete(letter);
       else activeBlocks.add(letter);
-      renderBlockFilters();
       render();
     };
 
-    container.appendChild(btn);
+    container.appendChild(card);
   });
 }
 
@@ -352,34 +378,7 @@ function renderSocietyStats(){
   document.getElementById("overallBar").style.width=percent+"%";
 }
 
-/* Top Block Dashboard */
-function renderBlockSummary(){
-  const container=document.getElementById("blockSummary");
-  container.innerHTML="";
-  VALID_BLOCKS.forEach(letter=>{
-    const flats=fullData.filter(d=>d.block===letter);
-    const total=flats.length;
-    const completed=flats.filter(d=>d.completed).length;
-    const owners=flats.filter(d=>d.occupant==="Owner").length;
-    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
-    const percent=total?Math.round((completed/total)*100):0;
-
-    const card=document.createElement("div");
-    card.className="summary-card";
-    card.innerHTML=`
-      <div><strong>${letter}</strong></div>
-      <div class="summary-percent">${percent}%</div>
-      <div>${completed}/${total}</div>
-      <div>O:${owners} | T:${tenants}</div>
-      <div class="summary-bar-bg">
-        <div class="summary-bar-fill" style="width:${percent}%"></div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-/* Filter Buttons */
+/* Owner/Tenant Filters */
 window.setFilter=(f,btn)=>{
   activeFilter=f;
   document.querySelectorAll(".filter-btn")
