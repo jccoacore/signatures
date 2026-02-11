@@ -81,6 +81,11 @@ button {
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
+.block-btn.active { background:#1976d2; color:white; }
+.block-btn.inactive { background:#e0e0e0; color:#888; }
+
+.filter-btn.active { background:#1976d2; color:white; }
+
 .summary-card {
   min-width:120px;
   padding:8px;
@@ -127,7 +132,6 @@ button {
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <h2>Secure Login</h2>
   <input type="email" id="email" placeholder="Email"><br>
@@ -136,7 +140,6 @@ button {
   <p id="loginError" style="color:red;"></p>
 </div>
 
-<!-- APP -->
 <div id="app">
 
 <h2>JCC Block Completion Tracker</h2>
@@ -144,7 +147,6 @@ button {
 <p>Logged in as: <span id="userEmail"></span></p>
 <button onclick="logout()">Logout</button>
 
-<!-- Society Stats -->
 <div class="stat-box">
   <div class="stat-item">Total: <span id="socTotal">0</span></div>
   <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
@@ -157,10 +159,21 @@ button {
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<!-- 🔥 TOP BLOCK DASHBOARD -->
 <div id="blockSummary" style="display:flex;overflow-x:auto;gap:10px;margin-bottom:15px;"></div>
 
 <input type="text" id="searchBox" placeholder="Search flat number">
+
+<!-- 🔥 BLOCK FILTERS -->
+<div id="blockFilters"></div>
+
+<!-- 🔥 OWNER / TENANT FILTERS -->
+<div>
+  <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
+  <button class="filter-btn" onclick="setFilter('TENANT',this)">Tenants</button>
+  <button class="filter-btn" onclick="setFilter('COMPLETED',this)">Completed</button>
+  <button class="filter-btn" onclick="setFilter('PENDING',this)">Pending</button>
+</div>
 
 <textarea id="inputData" placeholder="Selected flats"></textarea>
 
@@ -196,6 +209,8 @@ const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
 
 let fullData=[];
 let selectedFlats=new Set();
+let activeBlocks=new Set(VALID_BLOCKS);
+let activeFilter="ALL";
 let searchTerm="";
 
 const grid=document.getElementById("grid");
@@ -214,17 +229,14 @@ window.login = async () => {
 window.logout = async () => { await signOut(auth); };
 
 onAuthStateChanged(auth, user => {
-  const loginDiv = document.getElementById("login");
-  const appDiv = document.getElementById("app");
-  const userEmailSpan = document.getElementById("userEmail");
-
   if (user) {
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    userEmailSpan.innerText = user.email;
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("userEmail").innerText=user.email;
+    renderBlockFilters();
   } else {
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
+    document.getElementById("login").style.display="block";
+    document.getElementById("app").style.display="none";
   }
 });
 
@@ -242,18 +254,36 @@ document.getElementById("searchBox")
     render();
 });
 
+/* Apply Filters */
+function applyFilter(data){
+  let d=data.filter(x=>activeBlocks.has(x.block));
+
+  if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
+  if(activeFilter==="TENANT") d=d.filter(x=>x.occupant==="Tenant");
+  if(activeFilter==="COMPLETED") d=d.filter(x=>x.completed);
+  if(activeFilter==="PENDING") d=d.filter(x=>!x.completed);
+  if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
+
+  return d;
+}
+
 /* Render */
 function render(){
   grid.innerHTML="";
   renderSocietyStats();
   renderBlockSummary();
 
+  const filtered=applyFilter(fullData);
+
   VALID_BLOCKS.forEach(letter=>{
-    const flats=fullData.filter(d=>d.block===letter);
-    const total=flats.length;
-    const completed=flats.filter(d=>d.completed).length;
-    const owners=flats.filter(d=>d.occupant==="Owner").length;
-    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
+    if(!activeBlocks.has(letter)) return;
+
+    const flats=filtered.filter(d=>d.block===letter);
+
+    const total=fullData.filter(d=>d.block===letter).length;
+    const completed=fullData.filter(d=>d.block===letter && d.completed).length;
+    const owners=fullData.filter(d=>d.block===letter && d.occupant==="Owner").length;
+    const tenants=fullData.filter(d=>d.block===letter && d.occupant==="Tenant").length;
     const percent=total?Math.round((completed/total)*100):0;
 
     const col=document.createElement("div");
@@ -268,22 +298,41 @@ function render(){
       </div>
     `;
 
-    flats
-      .filter(d=>!searchTerm || d.number.toString().includes(searchTerm))
-      .sort((a,b)=>a.number-b.number)
-      .forEach(entry=>{
-        const key=entry.block+" "+entry.number;
-        const cell=document.createElement("div");
-        cell.className="cell "+
-          (entry.completed?"completed ":"")+
-          (entry.occupant==="Tenant"?"tenant":"owner");
-        if(selectedFlats.has(key)) cell.classList.add("selected");
-        cell.innerText=key;
-        cell.onclick=()=>toggleSelection(key);
-        col.appendChild(cell);
-      });
+    flats.sort((a,b)=>a.number-b.number).forEach(entry=>{
+      const key=entry.block+" "+entry.number;
+      const cell=document.createElement("div");
+      cell.className="cell "+
+        (entry.completed?"completed ":"")+
+        (entry.occupant==="Tenant"?"tenant":"owner");
+      if(selectedFlats.has(key)) cell.classList.add("selected");
+      cell.innerText=key;
+      cell.onclick=()=>toggleSelection(key);
+      col.appendChild(cell);
+    });
 
     grid.appendChild(col);
+  });
+}
+
+/* Block Filters */
+function renderBlockFilters(){
+  const container=document.getElementById("blockFilters");
+  container.innerHTML="";
+  VALID_BLOCKS.forEach(letter=>{
+    const btn=document.createElement("button");
+    btn.innerText=letter;
+    btn.className="block-btn";
+    if(activeBlocks.has(letter)) btn.classList.add("active");
+    else btn.classList.add("inactive");
+
+    btn.onclick=()=>{
+      if(activeBlocks.has(letter)) activeBlocks.delete(letter);
+      else activeBlocks.add(letter);
+      renderBlockFilters();
+      render();
+    };
+
+    container.appendChild(btn);
   });
 }
 
@@ -303,7 +352,7 @@ function renderSocietyStats(){
   document.getElementById("overallBar").style.width=percent+"%";
 }
 
-/* 🔥 Top Block Dashboard */
+/* Top Block Dashboard */
 function renderBlockSummary(){
   const container=document.getElementById("blockSummary");
   container.innerHTML="";
@@ -330,39 +379,21 @@ function renderBlockSummary(){
   });
 }
 
+/* Filter Buttons */
+window.setFilter=(f,btn)=>{
+  activeFilter=f;
+  document.querySelectorAll(".filter-btn")
+    .forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  render();
+}
+
 /* Selection */
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
   document.getElementById("inputData").value=
     Array.from(selectedFlats).join("\n");
-  render();
-}
-
-window.markCompleted=async()=>{
-  for(const entry of fullData){
-    const key=entry.block+" "+entry.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",entry.id),{completed:true});
-    }
-  }
-  clearSelection();
-}
-
-window.deleteSelected=async()=>{
-  if(!confirm("Delete selected flats?")) return;
-  for(const entry of fullData){
-    const key=entry.block+" "+entry.number;
-    if(selectedFlats.has(key)){
-      await deleteDoc(doc(db,"flats",entry.id));
-    }
-  }
-  clearSelection();
-}
-
-window.clearSelection=()=>{
-  selectedFlats.clear();
-  document.getElementById("inputData").value="";
   render();
 }
 </script>
