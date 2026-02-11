@@ -3,31 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JCC Block Tracker</title>
+<title>JCC Block Manager</title>
+
 <style>
-body { font-family: Arial; margin: 15px; }
-button { padding: 6px 10px; margin: 5px; cursor:pointer; }
-input { padding:6px; margin:5px; }
-#app { display:none; }
+body { font-family: Arial; margin:10px; }
+h2 { text-align:center; }
+
+input, textarea {
+  width:100%;
+  padding:6px;
+  margin-bottom:5px;
+  font-size:13px;
+}
+
+button {
+  padding:6px 10px;
+  margin:3px;
+  font-size:12px;
+  cursor:pointer;
+}
+
+.progress-container {
+  height:8px;
+  background:#ddd;
+  border-radius:4px;
+  overflow:hidden;
+  margin-bottom:10px;
+}
+
+.progress-bar {
+  height:8px;
+  background:#4caf50;
+}
+
 .grid {
   display:grid;
   grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
   gap:6px;
-  margin-top:10px;
 }
-.column { border:1px solid #ddd; border-radius:5px; overflow:hidden; }
-.column h4 { margin:0; padding:5px; background:#f3f3f3; text-align:center; }
-.cell { padding:4px; font-size:11px; border-bottom:1px solid #eee; text-align:center; }
-.completed { background:#1976d2; color:white; }
+
+.column {
+  border:1px solid #ddd;
+  border-radius:5px;
+  overflow:hidden;
+}
+
+.column h4 {
+  margin:0;
+  padding:4px;
+  background:#f3f3f3;
+  text-align:center;
+  font-size:12px;
+}
+
+.cell {
+  padding:4px;
+  font-size:11px;
+  border-bottom:1px solid #eee;
+  text-align:center;
+  cursor:pointer;
+}
+
 .owner { color:black; }
 .tenant { color:red; }
+.completed { background:#1976d2; color:white !important; }
+.selected { background:orange; color:white !important; }
+
+.filter-btn.active,
+.block-btn.active {
+  background:#1976d2;
+  color:white;
+}
+
+/* LOGIN */
+#login { margin-top:80px; text-align:center; }
+#app { display:none; }
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="login">
-  <h2>JCC Secure Login</h2>
+  <h2>Secure Login</h2>
   <input type="email" id="email" placeholder="Email"><br>
   <input type="password" id="password" placeholder="Password"><br>
   <button onclick="login()">Login</button>
@@ -36,10 +93,43 @@ input { padding:6px; margin:5px; }
 
 <!-- APP -->
 <div id="app">
-  <h2>JCC Block Tracker</h2>
-  <p>Logged in as: <span id="userEmail"></span></p>
-  <button onclick="logout()">Logout</button>
-  <div class="grid" id="grid"></div>
+
+<h2>JCC Block Completion Tracker</h2>
+
+<p>Logged in as: <span id="userEmail"></span></p>
+<button onclick="logout()">Logout</button>
+
+<div>
+Overall: <span id="overallText">0 / 0 (0%)</span>
+</div>
+
+<div class="progress-container">
+  <div id="overallBar" class="progress-bar" style="width:0%"></div>
+</div>
+
+<input type="text" id="searchBox" placeholder="Search flat number" oninput="applySearch()">
+
+<!-- Block Filters -->
+<div id="blockFilters"></div>
+
+<!-- Occupant/Status Filters -->
+<div>
+  <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
+  <button class="filter-btn" onclick="setFilter('TENANT',this)">Tenants</button>
+  <button class="filter-btn" onclick="setFilter('COMPLETED',this)">Completed</button>
+  <button class="filter-btn" onclick="setFilter('PENDING',this)">Pending</button>
+  <button onclick="exportCSV()">Export CSV</button>
+</div>
+
+<textarea id="inputData" placeholder="Selected flats"></textarea>
+
+<button onclick="markCompleted()">Mark Completed</button>
+<button onclick="deleteSelected()">Delete Selected</button>
+<button onclick="clearSelection()">Clear Selection</button>
+
+<div class="grid" id="grid"></div>
+
 </div>
 
 <script type="module">
@@ -48,7 +138,7 @@ import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
-  getFirestore, collection, updateDoc, doc, onSnapshot 
+  getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -65,76 +155,185 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
+
 let fullData = [];
-const grid = document.getElementById("grid");
+let selectedFlats = new Set();
+let activeFilter="ALL";
+let searchTerm="";
+let activeBlocks=new Set(VALID_BLOCKS);
+
+const grid=document.getElementById("grid");
 
 /* AUTH */
-window.login = async function(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  try {
-    await signInWithEmailAndPassword(auth,email,password);
-  } catch(err){
-    document.getElementById("loginError").innerText = err.message;
+window.login=async function(){
+  try{
+    await signInWithEmailAndPassword(auth,
+      document.getElementById("email").value,
+      document.getElementById("password").value);
+  }catch(err){
+    document.getElementById("loginError").innerText=err.message;
   }
 }
 
-window.logout = async function(){
-  await signOut(auth);
-}
+window.logout=async()=>{ await signOut(auth); }
 
 onAuthStateChanged(auth,user=>{
   if(user){
     document.getElementById("login").style.display="none";
     document.getElementById("app").style.display="block";
-    document.getElementById("userEmail").innerText = user.email;
-  } else {
+    document.getElementById("userEmail").innerText=user.email;
+    renderBlockFilters();
+  }else{
     document.getElementById("login").style.display="block";
     document.getElementById("app").style.display="none";
   }
 });
 
-/* FIRESTORE LISTENER */
+/* FIRESTORE */
 onSnapshot(collection(db,"flats"),snapshot=>{
   fullData=[];
-  snapshot.forEach(doc=>{
-    fullData.push({id:doc.id,...doc.data()});
-  });
+  snapshot.forEach(d=>fullData.push({id:d.id,...d.data()}));
   render();
 });
 
-function render(){
-  grid.innerHTML="";
-  const blocks = {};
-  VALID_BLOCKS.forEach(l=>blocks[l]=[]);
+function updateOverall(){
+  const total=fullData.length;
+  const completed=fullData.filter(d=>d.completed).length;
+  const percent=total?Math.round((completed/total)*100):0;
+  document.getElementById("overallText").innerText=
+    `${completed} / ${total} (${percent}%)`;
+  document.getElementById("overallBar").style.width=percent+"%";
+}
 
-  fullData.forEach(d=>blocks[d.block].push(d));
+function applyFilter(data){
+  let d=data.filter(x=>activeBlocks.has(x.block));
+
+  if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
+  if(activeFilter==="TENANT") d=d.filter(x=>x.occupant==="Tenant");
+  if(activeFilter==="COMPLETED") d=d.filter(x=>x.completed);
+  if(activeFilter==="PENDING") d=d.filter(x=>!x.completed);
+  if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
+
+  return d;
+}
+
+function render(){
+  if(!grid) return;
+  grid.innerHTML="";
+  updateOverall();
+
+  const filtered=applyFilter(fullData);
+  const blocks={};
+  VALID_BLOCKS.forEach(l=>blocks[l]=[]);
+  filtered.forEach(d=>blocks[d.block].push(d));
 
   VALID_BLOCKS.forEach(letter=>{
+    if(!activeBlocks.has(letter)) return;
+
     blocks[letter].sort((a,b)=>a.number-b.number);
     const col=document.createElement("div");
     col.className="column";
     col.innerHTML=`<h4>${letter}</h4>`;
-
     blocks[letter].forEach(entry=>{
+      const key=entry.block+" "+entry.number;
       const cell=document.createElement("div");
-      cell.className="cell " + 
-        (entry.completed ? "completed " : "") +
+      cell.className="cell "+
+        (entry.completed?"completed ":"")+
         (entry.occupant==="Tenant"?"tenant":"owner");
-
-      cell.innerText=letter+" "+entry.number;
-
-      cell.onclick=async ()=>{
-        await updateDoc(doc(db,"flats",entry.id),{
-          completed:!entry.completed
-        });
-      };
-
+      if(selectedFlats.has(key)) cell.classList.add("selected");
+      cell.innerText=key;
+      cell.onclick=()=>toggleSelection(key);
       col.appendChild(cell);
     });
-
     grid.appendChild(col);
+  });
+}
+
+function toggleSelection(flat){
+  if(selectedFlats.has(flat)) selectedFlats.delete(flat);
+  else selectedFlats.add(flat);
+  document.getElementById("inputData").value=
+    Array.from(selectedFlats).join("\n");
+  render();
+}
+
+window.markCompleted=async()=>{
+  for(const entry of fullData){
+    const key=entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await updateDoc(doc(db,"flats",entry.id),{completed:true});
+    }
+  }
+  clearSelection();
+}
+
+window.deleteSelected=async()=>{
+  if(!confirm("Delete selected flats?")) return;
+  for(const entry of fullData){
+    const key=entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await deleteDoc(doc(db,"flats",entry.id));
+    }
+  }
+  clearSelection();
+}
+
+window.clearSelection=()=>{
+  selectedFlats.clear();
+  document.getElementById("inputData").value="";
+  render();
+}
+
+window.setFilter=(f,btn)=>{
+  activeFilter=f;
+  document.querySelectorAll(".filter-btn")
+    .forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  render();
+}
+
+window.applySearch=()=>{
+  searchTerm=document.getElementById("searchBox").value.trim();
+  render();
+}
+
+window.exportCSV=()=>{
+  const data=applyFilter(fullData);
+  let csv="Block,Number,Occupant,Completed\n";
+  data.forEach(d=>{
+    csv+=`${d.block},${d.number},${d.occupant},${d.completed}\n`;
+  });
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="block_tracker_export.csv";
+  a.click();
+}
+
+function renderBlockFilters(){
+  const container=document.getElementById("blockFilters");
+  container.innerHTML="";
+
+  const allBtn=document.createElement("button");
+  allBtn.innerText="All Blocks";
+  allBtn.className="block-btn";
+  allBtn.onclick=()=>{
+    activeBlocks=new Set(VALID_BLOCKS);
+    render();
+  };
+  container.appendChild(allBtn);
+
+  VALID_BLOCKS.forEach(letter=>{
+    const btn=document.createElement("button");
+    btn.innerText=letter;
+    btn.className="block-btn";
+    btn.onclick=()=>{
+      if(activeBlocks.has(letter)) activeBlocks.delete(letter);
+      else activeBlocks.add(letter);
+      render();
+    };
+    container.appendChild(btn);
   });
 }
 </script>
