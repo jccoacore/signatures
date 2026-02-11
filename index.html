@@ -40,8 +40,8 @@ button {
 
 .grid {
   display:grid;
-  grid-template-columns: repeat(auto-fit,minmax(170px,1fr));
-  gap:8px;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap:10px;
 }
 
 .column {
@@ -81,19 +81,34 @@ button {
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
-.block-btn.active {
-  background:#1976d2;
-  color:white;
+.block-btn.active { background:#1976d2; color:white; }
+.block-btn.inactive { background:#e0e0e0; color:#888; }
+.filter-btn.active { background:#1976d2; color:white; }
+
+.summary-card {
+  min-width:90px;
+  padding:6px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  text-align:center;
+  font-size:11px;
+  background:#fafafa;
 }
 
-.block-btn.inactive {
-  background:#e0e0e0;
-  color:#888;
+.summary-percent {
+  font-weight:bold;
+  font-size:12px;
 }
 
-.filter-btn.active {
-  background:#1976d2;
-  color:white;
+.summary-bar-bg {
+  height:5px;
+  background:#ddd;
+  margin-top:4px;
+}
+
+.summary-bar-fill {
+  height:5px;
+  background:#4caf50;
 }
 
 #login { margin-top:80px; text-align:center; }
@@ -127,12 +142,13 @@ Overall: <span id="overallText">0 / 0 (0%)</span>
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
+<!-- Top Block Summary -->
+<div id="blockSummary" style="display:flex;overflow-x:auto;gap:8px;margin-bottom:10px;"></div>
+
 <input type="text" id="searchBox" placeholder="Search flat number" oninput="applySearch()">
 
-<!-- Block Filters -->
 <div id="blockFilters"></div>
 
-<!-- Status Filters -->
 <div>
   <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
   <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
@@ -154,12 +170,10 @@ Overall: <span id="overallText">0 / 0 (0%)</span>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-  getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
@@ -209,14 +223,14 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-/* Firestore Listener */
+/* Firestore */
 onSnapshot(collection(db,"flats"),snapshot=>{
   fullData=[];
   snapshot.forEach(d=>fullData.push({id:d.id,...d.data()}));
   render();
 });
 
-/* Overall Progress */
+/* Overall */
 function updateOverall(){
   const total=fullData.length;
   const completed=fullData.filter(d=>d.completed).length;
@@ -226,54 +240,67 @@ function updateOverall(){
   document.getElementById("overallBar").style.width=percent+"%";
 }
 
+/* Block Summary */
+function renderBlockSummary(){
+  const container=document.getElementById("blockSummary");
+  container.innerHTML="";
+  VALID_BLOCKS.forEach(letter=>{
+    const total=fullData.filter(d=>d.block===letter).length;
+    const completed=fullData.filter(d=>d.block===letter && d.completed).length;
+    const percent=total?Math.round((completed/total)*100):0;
+
+    const card=document.createElement("div");
+    card.className="summary-card";
+    card.innerHTML=`
+      <div><strong>${letter}</strong></div>
+      <div class="summary-percent">${percent}%</div>
+      <div>${completed}/${total}</div>
+      <div class="summary-bar-bg">
+        <div class="summary-bar-fill" style="width:${percent}%"></div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 /* Filtering */
 function applyFilter(data){
   let d=data.filter(x=>activeBlocks.has(x.block));
-
   if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
   if(activeFilter==="TENANT") d=d.filter(x=>x.occupant==="Tenant");
   if(activeFilter==="COMPLETED") d=d.filter(x=>x.completed);
   if(activeFilter==="PENDING") d=d.filter(x=>!x.completed);
   if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
-
   return d;
 }
 
 /* Render */
 function render(){
-  if(!grid) return;
   grid.innerHTML="";
   updateOverall();
+  renderBlockSummary();
 
   const filtered=applyFilter(fullData);
 
-  const blockStats = VALID_BLOCKS.map(letter=>{
-    const totalBlock = fullData.filter(d=>d.block===letter).length;
-    const completedBlock = fullData.filter(d=>d.block===letter && d.completed).length;
-    const percent = totalBlock ? Math.round((completedBlock/totalBlock)*100) : 0;
+  const blockStats=VALID_BLOCKS.map(letter=>{
+    const total=fullData.filter(d=>d.block===letter).length;
+    const completed=fullData.filter(d=>d.block===letter && d.completed).length;
+    const percent=total?Math.round((completed/total)*100):0;
 
     return {
-      letter,
-      totalBlock,
-      completedBlock,
-      percent,
-      flats: filtered.filter(d=>d.block===letter)
-                     .sort((a,b)=>a.number-b.number)
+      letter,total,completed,percent,
+      flats:filtered.filter(d=>d.block===letter)
+                    .sort((a,b)=>a.number-b.number)
     };
   })
-  .filter(b => activeBlocks.has(b.letter))
-  .sort((a,b)=>b.percent - a.percent); // Ranking
+  .filter(b=>activeBlocks.has(b.letter))
+  .sort((a,b)=>b.percent-a.percent);
 
   blockStats.forEach(block=>{
     const col=document.createElement("div");
     col.className="column";
-
     col.innerHTML=`
-      <h4>
-        ${block.letter}
-        (${block.completedBlock}/${block.totalBlock})
-        ${block.percent}%
-      </h4>
+      <h4>${block.letter} (${block.completed}/${block.total}) ${block.percent}%</h4>
       <div class="block-progress-bg">
         <div class="block-progress-fill" style="width:${block.percent}%"></div>
       </div>
@@ -282,17 +309,12 @@ function render(){
     block.flats.forEach(entry=>{
       const key=entry.block+" "+entry.number;
       const cell=document.createElement("div");
-
       cell.className="cell "+
         (entry.completed?"completed ":"")+
         (entry.occupant==="Tenant"?"tenant":"owner");
-
-      if(selectedFlats.has(key))
-        cell.classList.add("selected");
-
+      if(selectedFlats.has(key)) cell.classList.add("selected");
       cell.innerText=key;
       cell.onclick=()=>toggleSelection(key);
-
       col.appendChild(cell);
     });
 
@@ -304,10 +326,8 @@ function render(){
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
-
   document.getElementById("inputData").value=
     Array.from(selectedFlats).join("\n");
-
   render();
 }
 
@@ -339,7 +359,6 @@ window.clearSelection=()=>{
   render();
 }
 
-/* Filters */
 window.setFilter=(f,btn)=>{
   activeFilter=f;
   document.querySelectorAll(".filter-btn")
@@ -353,7 +372,6 @@ window.applySearch=()=>{
   render();
 }
 
-/* CSV Export */
 window.exportCSV=()=>{
   const data=applyFilter(fullData);
   let csv="Block,Number,Occupant,Completed\n";
@@ -368,31 +386,26 @@ window.exportCSV=()=>{
   a.click();
 }
 
-/* Block Filter Buttons */
+/* Block Filters */
 function renderBlockFilters(){
   const container=document.getElementById("blockFilters");
   container.innerHTML="";
-
   VALID_BLOCKS.forEach(letter=>{
     const btn=document.createElement("button");
     btn.innerText=letter;
     btn.className="block-btn";
-
     if(activeBlocks.has(letter))
       btn.classList.add("active");
     else
       btn.classList.add("inactive");
-
     btn.onclick=()=>{
       if(activeBlocks.has(letter))
         activeBlocks.delete(letter);
       else
         activeBlocks.add(letter);
-
       renderBlockFilters();
       render();
     };
-
     container.appendChild(btn);
   });
 }
