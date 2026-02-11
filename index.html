@@ -2,44 +2,88 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Block Completion Tracker (A-K)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Tracker (A-K)</title>
+
 <style>
-body { font-family: Arial; margin:20px; }
-textarea { width:100%; height:60px; padding:10px; }
-button { padding:6px 12px; margin:5px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 10px;
+}
 
+/* Header */
+h2 {
+  text-align: center;
+  font-size: 20px;
+}
+
+.stats {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Compact input */
+textarea {
+  width: 100%;
+  height: 50px;
+  padding: 6px;
+  font-size: 14px;
+}
+
+button {
+  padding: 6px 10px;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Responsive Grid */
 .grid {
-  display:grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap:10px;
-  margin-top:20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 15px;
 }
 
+/* Block column */
 .column {
-  border:1px solid #ccc;
-  min-height:200px;
-  padding:5px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
+/* Block header */
 .column h4 {
-  text-align:center;
-  background:#f2f2f2;
-  margin:0;
-  padding:5px;
+  text-align: center;
+  background: #f0f0f0;
+  margin: 0;
+  padding: 4px;
+  font-size: 13px;
 }
 
+/* Compact cell */
 .cell {
-  padding:5px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
+  padding: 4px;
+  font-size: 12px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+  cursor: pointer;
 }
 
-.owner { color:black; }
-.tenant { color:red; }
+/* Owner / Tenant colors */
+.owner { color: black; }
+.tenant { color: red; }
 
+/* Completed style */
 .completed {
-  background:#2196f3;
-  color:white !important;
+  background: #1976d2;
+  color: white !important;
+}
+
+/* Remove bottom border for last item */
+.column .cell:last-child {
+  border-bottom: none;
 }
 </style>
 </head>
@@ -47,10 +91,10 @@ button { padding:6px 12px; margin:5px; }
 
 <h2>Block Completion Tracker (A-K)</h2>
 
-<h3>
-Total Flats: <span id="totalCount">0</span> |
+<div class="stats">
+Total: <span id="totalCount">0</span> |
 Completed: <span id="completedCount">0</span>
-</h3>
+</div>
 
 <textarea id="inputData" placeholder="Enter:
 A 101
@@ -65,7 +109,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, updateDoc, doc, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔴 REPLACE WITH YOUR CONFIG */
+/* 🔴 YOUR CONFIG HERE */
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
   authDomain: "jcc-block-manager.firebaseapp.com",
@@ -83,6 +127,7 @@ const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
 const grid = document.getElementById("grid");
 
 function render(data) {
+
   grid.innerHTML = "";
 
   let completedCounter = 0;
