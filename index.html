@@ -21,6 +21,8 @@ button {
   margin:3px;
   font-size:12px;
   cursor:pointer;
+  border:1px solid #ccc;
+  background:#f5f5f5;
 }
 
 .progress-container {
@@ -38,22 +40,32 @@ button {
 
 .grid {
   display:grid;
-  grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
-  gap:6px;
+  grid-template-columns: repeat(auto-fit,minmax(170px,1fr));
+  gap:8px;
 }
 
 .column {
   border:1px solid #ddd;
-  border-radius:5px;
+  border-radius:6px;
   overflow:hidden;
 }
 
 .column h4 {
   margin:0;
-  padding:4px;
+  padding:6px;
   background:#f3f3f3;
   text-align:center;
   font-size:12px;
+}
+
+.block-progress-bg {
+  height:6px;
+  background:#ddd;
+}
+
+.block-progress-fill {
+  height:6px;
+  background:#4caf50;
 }
 
 .cell {
@@ -69,13 +81,21 @@ button {
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
-.filter-btn.active,
 .block-btn.active {
   background:#1976d2;
   color:white;
 }
 
-/* LOGIN */
+.block-btn.inactive {
+  background:#e0e0e0;
+  color:#888;
+}
+
+.filter-btn.active {
+  background:#1976d2;
+  color:white;
+}
+
 #login { margin-top:80px; text-align:center; }
 #app { display:none; }
 </style>
@@ -112,7 +132,7 @@ Overall: <span id="overallText">0 / 0 (0%)</span>
 <!-- Block Filters -->
 <div id="blockFilters"></div>
 
-<!-- Occupant/Status Filters -->
+<!-- Status Filters -->
 <div>
   <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
   <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
@@ -156,8 +176,8 @@ const db = getFirestore(app);
 
 const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
 
-let fullData = [];
-let selectedFlats = new Set();
+let fullData=[];
+let selectedFlats=new Set();
 let activeFilter="ALL";
 let searchTerm="";
 let activeBlocks=new Set(VALID_BLOCKS);
@@ -165,7 +185,7 @@ let activeBlocks=new Set(VALID_BLOCKS);
 const grid=document.getElementById("grid");
 
 /* AUTH */
-window.login=async function(){
+window.login=async()=>{
   try{
     await signInWithEmailAndPassword(auth,
       document.getElementById("email").value,
@@ -189,13 +209,14 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-/* FIRESTORE */
+/* Firestore Listener */
 onSnapshot(collection(db,"flats"),snapshot=>{
   fullData=[];
   snapshot.forEach(d=>fullData.push({id:d.id,...d.data()}));
   render();
 });
 
+/* Overall Progress */
 function updateOverall(){
   const total=fullData.length;
   const completed=fullData.filter(d=>d.completed).length;
@@ -205,6 +226,7 @@ function updateOverall(){
   document.getElementById("overallBar").style.width=percent+"%";
 }
 
+/* Filtering */
 function applyFilter(data){
   let d=data.filter(x=>activeBlocks.has(x.block));
 
@@ -217,46 +239,79 @@ function applyFilter(data){
   return d;
 }
 
+/* Render */
 function render(){
   if(!grid) return;
   grid.innerHTML="";
   updateOverall();
 
   const filtered=applyFilter(fullData);
-  const blocks={};
-  VALID_BLOCKS.forEach(l=>blocks[l]=[]);
-  filtered.forEach(d=>blocks[d.block].push(d));
 
-  VALID_BLOCKS.forEach(letter=>{
-    if(!activeBlocks.has(letter)) return;
+  const blockStats = VALID_BLOCKS.map(letter=>{
+    const totalBlock = fullData.filter(d=>d.block===letter).length;
+    const completedBlock = fullData.filter(d=>d.block===letter && d.completed).length;
+    const percent = totalBlock ? Math.round((completedBlock/totalBlock)*100) : 0;
 
-    blocks[letter].sort((a,b)=>a.number-b.number);
+    return {
+      letter,
+      totalBlock,
+      completedBlock,
+      percent,
+      flats: filtered.filter(d=>d.block===letter)
+                     .sort((a,b)=>a.number-b.number)
+    };
+  })
+  .filter(b => activeBlocks.has(b.letter))
+  .sort((a,b)=>b.percent - a.percent); // Ranking
+
+  blockStats.forEach(block=>{
     const col=document.createElement("div");
     col.className="column";
-    col.innerHTML=`<h4>${letter}</h4>`;
-    blocks[letter].forEach(entry=>{
+
+    col.innerHTML=`
+      <h4>
+        ${block.letter}
+        (${block.completedBlock}/${block.totalBlock})
+        ${block.percent}%
+      </h4>
+      <div class="block-progress-bg">
+        <div class="block-progress-fill" style="width:${block.percent}%"></div>
+      </div>
+    `;
+
+    block.flats.forEach(entry=>{
       const key=entry.block+" "+entry.number;
       const cell=document.createElement("div");
+
       cell.className="cell "+
         (entry.completed?"completed ":"")+
         (entry.occupant==="Tenant"?"tenant":"owner");
-      if(selectedFlats.has(key)) cell.classList.add("selected");
+
+      if(selectedFlats.has(key))
+        cell.classList.add("selected");
+
       cell.innerText=key;
       cell.onclick=()=>toggleSelection(key);
+
       col.appendChild(cell);
     });
+
     grid.appendChild(col);
   });
 }
 
+/* Selection */
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
+
   document.getElementById("inputData").value=
     Array.from(selectedFlats).join("\n");
+
   render();
 }
 
+/* Actions */
 window.markCompleted=async()=>{
   for(const entry of fullData){
     const key=entry.block+" "+entry.number;
@@ -284,6 +339,7 @@ window.clearSelection=()=>{
   render();
 }
 
+/* Filters */
 window.setFilter=(f,btn)=>{
   activeFilter=f;
   document.querySelectorAll(".filter-btn")
@@ -297,6 +353,7 @@ window.applySearch=()=>{
   render();
 }
 
+/* CSV Export */
 window.exportCSV=()=>{
   const data=applyFilter(fullData);
   let csv="Block,Number,Occupant,Completed\n";
@@ -311,28 +368,31 @@ window.exportCSV=()=>{
   a.click();
 }
 
+/* Block Filter Buttons */
 function renderBlockFilters(){
   const container=document.getElementById("blockFilters");
   container.innerHTML="";
-
-  const allBtn=document.createElement("button");
-  allBtn.innerText="All Blocks";
-  allBtn.className="block-btn";
-  allBtn.onclick=()=>{
-    activeBlocks=new Set(VALID_BLOCKS);
-    render();
-  };
-  container.appendChild(allBtn);
 
   VALID_BLOCKS.forEach(letter=>{
     const btn=document.createElement("button");
     btn.innerText=letter;
     btn.className="block-btn";
+
+    if(activeBlocks.has(letter))
+      btn.classList.add("active");
+    else
+      btn.classList.add("inactive");
+
     btn.onclick=()=>{
-      if(activeBlocks.has(letter)) activeBlocks.delete(letter);
-      else activeBlocks.add(letter);
+      if(activeBlocks.has(letter))
+        activeBlocks.delete(letter);
+      else
+        activeBlocks.add(letter);
+
+      renderBlockFilters();
       render();
     };
+
     container.appendChild(btn);
   });
 }
