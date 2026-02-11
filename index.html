@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Block Tracker (A-K)</title>
+<title>JCC Block Tracker</title>
 
 <style>
 body { font-family: Arial; margin: 10px; }
@@ -12,16 +12,29 @@ h2 { text-align: center; font-size: 18px; }
 
 .stats {
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   font-size: 13px;
   font-weight: bold;
 }
 
-textarea {
+.progress-container {
+  height: 8px;
+  background: #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #4caf50;
+}
+
+textarea, input[type="text"] {
   width: 100%;
-  height: 50px;
   padding: 6px;
   font-size: 13px;
+  margin-bottom: 5px;
 }
 
 button {
@@ -31,7 +44,7 @@ button {
   cursor: pointer;
 }
 
-.filters { text-align: center; margin-bottom: 8px; }
+.filters { text-align: center; margin-bottom: 6px; }
 
 .filter-btn {
   background: #f0f0f0;
@@ -46,9 +59,9 @@ button {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .column {
@@ -71,7 +84,6 @@ button {
   border-bottom: 1px solid #eee;
   text-align: center;
   cursor: pointer;
-  user-select: none;
 }
 
 .owner { color: black; }
@@ -85,12 +97,17 @@ button {
 </head>
 <body>
 
-<h2>Block Completion Tracker (A-K)</h2>
+<h2>JCC Block Completion Tracker</h2>
 
 <div class="stats">
-Total: <span id="totalCount">0</span> |
-Completed: <span id="completedCount">0</span>
+Overall: <span id="overallText">0 / 0 (0%)</span>
 </div>
+
+<div class="progress-container">
+  <div id="overallBar" class="progress-bar" style="width:0%"></div>
+</div>
+
+<input type="text" id="searchBox" placeholder="Search flat number (e.g. 810)" oninput="applySearch()">
 
 <div class="filters">
   <button class="filter-btn active" onclick="setFilter('ALL', this)">All</button>
@@ -98,6 +115,7 @@ Completed: <span id="completedCount">0</span>
   <button class="filter-btn" onclick="setFilter('TENANT', this)">Tenants</button>
   <button class="filter-btn" onclick="setFilter('COMPLETED', this)">Completed</button>
   <button class="filter-btn" onclick="setFilter('PENDING', this)">Pending</button>
+  <button onclick="exportCSV()">Export CSV</button>
 </div>
 
 <textarea id="inputData" placeholder="A 101"></textarea>
@@ -108,17 +126,16 @@ Completed: <span id="completedCount">0</span>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot } 
+import { getFirestore, collection, updateDoc, doc, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔴 YOUR CONFIG */
 const firebaseConfig = {
-  apiKey: "YOUR_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET",
-  messagingSenderId: "YOUR_MSG_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
+  authDomain: "jcc-block-manager.firebaseapp.com",
+  projectId: "jcc-block-manager",
+  storageBucket: "jcc-block-manager.firebasestorage.app",
+  messagingSenderId: "1013753394181",
+  appId: "1:1013753394181:web:1c0a826908e3345877186c"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -128,28 +145,45 @@ const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
 
 let fullData = [];
 let activeFilter = "ALL";
+let searchTerm = "";
 
 const grid = document.getElementById("grid");
 
 function applyFilter(data){
-  switch(activeFilter){
-    case "OWNER": return data.filter(d => d.occupant === "Owner");
-    case "TENANT": return data.filter(d => d.occupant === "Tenant");
-    case "COMPLETED": return data.filter(d => d.completed);
-    case "PENDING": return data.filter(d => !d.completed);
-    default: return data;
+  let filtered = data;
+
+  if(activeFilter === "OWNER")
+    filtered = filtered.filter(d => d.occupant === "Owner");
+  if(activeFilter === "TENANT")
+    filtered = filtered.filter(d => d.occupant === "Tenant");
+  if(activeFilter === "COMPLETED")
+    filtered = filtered.filter(d => d.completed);
+  if(activeFilter === "PENDING")
+    filtered = filtered.filter(d => !d.completed);
+
+  if(searchTerm){
+    filtered = filtered.filter(d => 
+      d.number.toString().includes(searchTerm)
+    );
   }
+
+  return filtered;
+}
+
+function updateOverallProgress(){
+  const total = fullData.length;
+  const completed = fullData.filter(d=>d.completed).length;
+  const percent = total === 0 ? 0 : Math.round((completed/total)*100);
+
+  document.getElementById("overallText").innerText =
+    `${completed} / ${total} (${percent}%)`;
+
+  document.getElementById("overallBar").style.width = percent + "%";
 }
 
 function render(data){
-
   grid.innerHTML = "";
-
-  let completedCounter = fullData.filter(d=>d.completed).length;
-  let totalCounter = fullData.length;
-
-  document.getElementById("completedCount").innerText = completedCounter;
-  document.getElementById("totalCount").innerText = totalCounter;
+  updateOverallProgress();
 
   const blocks = {};
   VALID_BLOCKS.forEach(letter => blocks[letter] = []);
@@ -165,37 +199,21 @@ function render(data){
 
     const col=document.createElement("div");
     col.className="column";
-    col.innerHTML="<h4>"+letter+"</h4>";
+    col.innerHTML=`<h4>${letter}</h4>`;
 
     blocks[letter].forEach(entry=>{
       const cell=document.createElement("div");
-
       let occupantClass = entry.occupant === "Tenant" ? "tenant" : "owner";
       cell.className = "cell " + occupantClass;
       if(entry.completed) cell.classList.add("completed");
 
       cell.innerText = letter+" "+entry.number;
 
-      /* Toggle Complete on Tap */
       cell.onclick = async () => {
         await updateDoc(doc(db,"flats",entry.id),{
           completed: !entry.completed
         });
       };
-
-      /* Long Press Delete */
-      let pressTimer;
-      cell.addEventListener("touchstart", () => {
-        pressTimer = setTimeout(async () => {
-          if(confirm("Delete "+letter+" "+entry.number+"?")){
-            await deleteDoc(doc(db,"flats",entry.id));
-          }
-        }, 800);
-      });
-
-      cell.addEventListener("touchend", () => {
-        clearTimeout(pressTimer);
-      });
 
       col.appendChild(cell);
     });
@@ -209,6 +227,11 @@ window.setFilter = function(filter, btn){
   document.querySelectorAll(".filter-btn")
     .forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
+  render(applyFilter(fullData));
+}
+
+window.applySearch = function(){
+  searchTerm = document.getElementById("searchBox").value.trim();
   render(applyFilter(fullData));
 }
 
@@ -235,6 +258,23 @@ window.markCompleted = async function(){
   });
 
   document.getElementById("inputData").value="";
+}
+
+window.exportCSV = function(){
+  const dataToExport = applyFilter(fullData);
+
+  let csv = "Block,Number,Occupant,Completed\n";
+
+  dataToExport.forEach(d=>{
+    csv += `${d.block},${d.number},${d.occupant},${d.completed}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "block_tracker_export.csv";
+  a.click();
 }
 
 onSnapshot(collection(db,"flats"),snapshot=>{
