@@ -4,116 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JCC Block Tracker</title>
-
 <style>
-body { font-family: Arial; margin: 10px; }
-
-h2 { text-align: center; font-size: 18px; }
-
-.stats {
-  text-align: center;
-  margin-bottom: 5px;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.progress-container {
-  height: 8px;
-  background: #ddd;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #4caf50;
-}
-
-textarea, input[type="text"] {
-  width: 100%;
-  padding: 6px;
-  font-size: 13px;
-  margin-bottom: 5px;
-}
-
-button {
-  padding: 6px 10px;
-  font-size: 12px;
-  margin: 3px;
-  cursor: pointer;
-}
-
+body { font-family: Arial; margin: 15px; }
+button { padding: 6px 10px; margin: 5px; cursor:pointer; }
+input { padding:6px; margin:5px; }
+#app { display:none; }
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 6px;
-  margin-top: 8px;
+  display:grid;
+  grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+  gap:6px;
+  margin-top:10px;
 }
-
-.column {
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.column h4 {
-  text-align: center;
-  background: #f3f3f3;
-  margin: 0;
-  padding: 4px;
-  font-size: 12px;
-}
-
-.cell {
-  padding: 4px;
-  font-size: 11px;
-  border-bottom: 1px solid #eee;
-  text-align: center;
-  cursor: pointer;
-}
-
-.owner { color: black; }
-.tenant { color: red; }
-
-.completed {
-  background: #1976d2;
-  color: white !important;
-}
-
-/* Selected (not yet saved) */
-.selected {
-  background: orange;
-  color: white !important;
-}
+.column { border:1px solid #ddd; border-radius:5px; overflow:hidden; }
+.column h4 { margin:0; padding:5px; background:#f3f3f3; text-align:center; }
+.cell { padding:4px; font-size:11px; border-bottom:1px solid #eee; text-align:center; }
+.completed { background:#1976d2; color:white; }
+.owner { color:black; }
+.tenant { color:red; }
 </style>
 </head>
 <body>
 
-<h2>JCC Block Completion Tracker</h2>
-
-<div class="stats">
-Overall: <span id="overallText">0 / 0 (0%)</span>
+<!-- LOGIN -->
+<div id="login">
+  <h2>JCC Secure Login</h2>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button onclick="login()">Login</button>
+  <p id="loginError" style="color:red;"></p>
 </div>
 
-<div class="progress-container">
-  <div id="overallBar" class="progress-bar" style="width:0%"></div>
+<!-- APP -->
+<div id="app">
+  <h2>JCC Block Tracker</h2>
+  <p>Logged in as: <span id="userEmail"></span></p>
+  <button onclick="logout()">Logout</button>
+  <div class="grid" id="grid"></div>
 </div>
-
-<input type="text" id="searchBox" placeholder="Search flat number" oninput="applySearch()">
-
-<textarea id="inputData" placeholder="Selected flats will appear here"></textarea>
-
-<button onclick="markCompleted()">Mark Completed</button>
-<button onclick="deleteSelected()">Delete Selected</button>
-<button onclick="clearSelection()">Clear Selection</button>
-
-<div class="grid" id="grid"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+  getFirestore, collection, updateDoc, doc, onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
@@ -125,116 +61,41 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
 const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
-
 let fullData = [];
-let selectedFlats = new Set();
-let searchTerm = "";
-
 const grid = document.getElementById("grid");
 
-function updateOverallProgress(){
-  const total = fullData.length;
-  const completed = fullData.filter(d=>d.completed).length;
-  const percent = total === 0 ? 0 : Math.round((completed/total)*100);
+/* AUTH */
+window.login = async function(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-  document.getElementById("overallText").innerText =
-    `${completed} / ${total} (${percent}%)`;
-
-  document.getElementById("overallBar").style.width = percent + "%";
+  try {
+    await signInWithEmailAndPassword(auth,email,password);
+  } catch(err){
+    document.getElementById("loginError").innerText = err.message;
+  }
 }
 
-function render(){
-  grid.innerHTML = "";
-  updateOverallProgress();
-
-  const blocks = {};
-  VALID_BLOCKS.forEach(letter => blocks[letter] = []);
-
-  fullData.forEach(item=>{
-    if(item.number.toString().includes(searchTerm))
-      blocks[item.block].push(item);
-  });
-
-  VALID_BLOCKS.forEach(letter=>{
-    blocks[letter].sort((a,b)=>a.number-b.number);
-
-    const col=document.createElement("div");
-    col.className="column";
-    col.innerHTML=`<h4>${letter}</h4>`;
-
-    blocks[letter].forEach(entry=>{
-      const key = entry.block+" "+entry.number;
-      const cell=document.createElement("div");
-
-      let occupantClass = entry.occupant === "Tenant" ? "tenant" : "owner";
-      cell.className = "cell " + occupantClass;
-      if(entry.completed) cell.classList.add("completed");
-      if(selectedFlats.has(key)) cell.classList.add("selected");
-
-      cell.innerText = key;
-
-      cell.onclick = () => toggleSelection(key);
-
-      col.appendChild(cell);
-    });
-
-    grid.appendChild(col);
-  });
+window.logout = async function(){
+  await signOut(auth);
 }
 
-function toggleSelection(flat){
-  if(selectedFlats.has(flat)){
-    selectedFlats.delete(flat);
+onAuthStateChanged(auth,user=>{
+  if(user){
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+    document.getElementById("userEmail").innerText = user.email;
   } else {
-    selectedFlats.add(flat);
+    document.getElementById("login").style.display="block";
+    document.getElementById("app").style.display="none";
   }
-  updateTextarea();
-  render();
-}
+});
 
-function updateTextarea(){
-  document.getElementById("inputData").value =
-    Array.from(selectedFlats).join("\n");
-}
-
-window.markCompleted = async function(){
-  for(const entry of fullData){
-    const key = entry.block+" "+entry.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",entry.id),{
-        completed: true
-      });
-    }
-  }
-  clearSelection();
-}
-
-window.deleteSelected = async function(){
-  if(!confirm("Delete selected flats?")) return;
-
-  for(const entry of fullData){
-    const key = entry.block+" "+entry.number;
-    if(selectedFlats.has(key)){
-      await deleteDoc(doc(db,"flats",entry.id));
-    }
-  }
-  clearSelection();
-}
-
-window.clearSelection = function(){
-  selectedFlats.clear();
-  updateTextarea();
-  render();
-}
-
-window.applySearch = function(){
-  searchTerm = document.getElementById("searchBox").value.trim();
-  render();
-}
-
+/* FIRESTORE LISTENER */
 onSnapshot(collection(db,"flats"),snapshot=>{
   fullData=[];
   snapshot.forEach(doc=>{
@@ -242,6 +103,40 @@ onSnapshot(collection(db,"flats"),snapshot=>{
   });
   render();
 });
+
+function render(){
+  grid.innerHTML="";
+  const blocks = {};
+  VALID_BLOCKS.forEach(l=>blocks[l]=[]);
+
+  fullData.forEach(d=>blocks[d.block].push(d));
+
+  VALID_BLOCKS.forEach(letter=>{
+    blocks[letter].sort((a,b)=>a.number-b.number);
+    const col=document.createElement("div");
+    col.className="column";
+    col.innerHTML=`<h4>${letter}</h4>`;
+
+    blocks[letter].forEach(entry=>{
+      const cell=document.createElement("div");
+      cell.className="cell " + 
+        (entry.completed ? "completed " : "") +
+        (entry.occupant==="Tenant"?"tenant":"owner");
+
+      cell.innerText=letter+" "+entry.number;
+
+      cell.onclick=async ()=>{
+        await updateDoc(doc(db,"flats",entry.id),{
+          completed:!entry.completed
+        });
+      };
+
+      col.appendChild(cell);
+    });
+
+    grid.appendChild(col);
+  });
+}
 </script>
 
 </body>
