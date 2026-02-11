@@ -40,8 +40,8 @@ button {
 
 .grid {
   display:grid;
-  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-  gap:10px;
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+  gap:12px;
 }
 
 .column {
@@ -86,8 +86,8 @@ button {
 .filter-btn.active { background:#1976d2; color:white; }
 
 .summary-card {
-  min-width:90px;
-  padding:6px;
+  min-width:110px;
+  padding:8px;
   border:1px solid #ddd;
   border-radius:6px;
   text-align:center;
@@ -97,7 +97,7 @@ button {
 
 .summary-percent {
   font-weight:bold;
-  font-size:12px;
+  font-size:13px;
 }
 
 .summary-bar-bg {
@@ -109,6 +109,20 @@ button {
 .summary-bar-fill {
   height:5px;
   background:#4caf50;
+}
+
+.stat-box {
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+  font-size:13px;
+}
+
+.stat-item {
+  background:#f3f3f3;
+  padding:6px 10px;
+  border-radius:6px;
 }
 
 #login { margin-top:80px; text-align:center; }
@@ -134,16 +148,21 @@ button {
 <p>Logged in as: <span id="userEmail"></span></p>
 <button onclick="logout()">Logout</button>
 
-<div>
-Overall: <span id="overallText">0 / 0 (0%)</span>
+<!-- Society Stats -->
+<div class="stat-box">
+  <div class="stat-item">Total: <span id="socTotal">0</span></div>
+  <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
+  <div class="stat-item">Owners: <span id="socOwners">0</span></div>
+  <div class="stat-item">Tenants: <span id="socTenants">0</span></div>
+  <div class="stat-item">Overall %: <span id="socPercent">0%</span></div>
 </div>
 
 <div class="progress-container">
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<!-- Top Block Summary -->
-<div id="blockSummary" style="display:flex;overflow-x:auto;gap:8px;margin-bottom:10px;"></div>
+<!-- Block Summary Strip -->
+<div id="blockSummary" style="display:flex;overflow-x:auto;gap:10px;margin-bottom:10px;"></div>
 
 <input type="text" id="searchBox" placeholder="Search flat number" oninput="applySearch()">
 
@@ -201,25 +220,22 @@ const grid=document.getElementById("grid");
 /* AUTH */
 window.login=async()=>{
   try{
-    await signInWithEmailAndPassword(auth,
-      document.getElementById("email").value,
-      document.getElementById("password").value);
+    await signInWithEmailAndPassword(auth,email.value,password.value);
   }catch(err){
-    document.getElementById("loginError").innerText=err.message;
+    loginError.innerText=err.message;
   }
 }
-
 window.logout=async()=>{ await signOut(auth); }
 
 onAuthStateChanged(auth,user=>{
   if(user){
-    document.getElementById("login").style.display="none";
-    document.getElementById("app").style.display="block";
-    document.getElementById("userEmail").innerText=user.email;
+    login.style.display="none";
+    app.style.display="block";
+    userEmail.innerText=user.email;
     renderBlockFilters();
   }else{
-    document.getElementById("login").style.display="block";
-    document.getElementById("app").style.display="none";
+    login.style.display="block";
+    app.style.display="none";
   }
 });
 
@@ -230,23 +246,31 @@ onSnapshot(collection(db,"flats"),snapshot=>{
   render();
 });
 
-/* Overall */
-function updateOverall(){
+/* Society Stats */
+function updateSocietyStats(){
   const total=fullData.length;
   const completed=fullData.filter(d=>d.completed).length;
+  const owners=fullData.filter(d=>d.occupant==="Owner").length;
+  const tenants=fullData.filter(d=>d.occupant==="Tenant").length;
   const percent=total?Math.round((completed/total)*100):0;
-  document.getElementById("overallText").innerText=
-    `${completed} / ${total} (${percent}%)`;
-  document.getElementById("overallBar").style.width=percent+"%";
+
+  socTotal.innerText=total;
+  socCompleted.innerText=completed;
+  socOwners.innerText=owners;
+  socTenants.innerText=tenants;
+  socPercent.innerText=percent+"%";
+  overallBar.style.width=percent+"%";
 }
 
 /* Block Summary */
 function renderBlockSummary(){
-  const container=document.getElementById("blockSummary");
-  container.innerHTML="";
+  blockSummary.innerHTML="";
   VALID_BLOCKS.forEach(letter=>{
-    const total=fullData.filter(d=>d.block===letter).length;
-    const completed=fullData.filter(d=>d.block===letter && d.completed).length;
+    const flats=fullData.filter(d=>d.block===letter);
+    const total=flats.length;
+    const completed=flats.filter(d=>d.completed).length;
+    const owners=flats.filter(d=>d.occupant==="Owner").length;
+    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
     const percent=total?Math.round((completed/total)*100):0;
 
     const card=document.createElement("div");
@@ -255,11 +279,12 @@ function renderBlockSummary(){
       <div><strong>${letter}</strong></div>
       <div class="summary-percent">${percent}%</div>
       <div>${completed}/${total}</div>
+      <div>O:${owners} | T:${tenants}</div>
       <div class="summary-bar-bg">
         <div class="summary-bar-fill" style="width:${percent}%"></div>
       </div>
     `;
-    container.appendChild(card);
+    blockSummary.appendChild(card);
   });
 }
 
@@ -274,49 +299,50 @@ function applyFilter(data){
   return d;
 }
 
-/* Render */
+/* Render Grid (Serial A → K order) */
 function render(){
   grid.innerHTML="";
-  updateOverall();
+  updateSocietyStats();
   renderBlockSummary();
 
   const filtered=applyFilter(fullData);
 
-  const blockStats=VALID_BLOCKS.map(letter=>{
-    const total=fullData.filter(d=>d.block===letter).length;
-    const completed=fullData.filter(d=>d.block===letter && d.completed).length;
+  VALID_BLOCKS.forEach(letter=>{
+    if(!activeBlocks.has(letter)) return;
+
+    const flats=fullData.filter(d=>d.block===letter);
+    const total=flats.length;
+    const completed=flats.filter(d=>d.completed).length;
+    const owners=flats.filter(d=>d.occupant==="Owner").length;
+    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
     const percent=total?Math.round((completed/total)*100):0;
 
-    return {
-      letter,total,completed,percent,
-      flats:filtered.filter(d=>d.block===letter)
-                    .sort((a,b)=>a.number-b.number)
-    };
-  })
-  .filter(b=>activeBlocks.has(b.letter))
-  .sort((a,b)=>b.percent-a.percent);
-
-  blockStats.forEach(block=>{
     const col=document.createElement("div");
     col.className="column";
     col.innerHTML=`
-      <h4>${block.letter} (${block.completed}/${block.total}) ${block.percent}%</h4>
+      <h4>
+        ${letter} (${completed}/${total}) ${percent}%
+        <br>O:${owners} | T:${tenants}
+      </h4>
       <div class="block-progress-bg">
-        <div class="block-progress-fill" style="width:${block.percent}%"></div>
+        <div class="block-progress-fill" style="width:${percent}%"></div>
       </div>
     `;
 
-    block.flats.forEach(entry=>{
-      const key=entry.block+" "+entry.number;
-      const cell=document.createElement("div");
-      cell.className="cell "+
-        (entry.completed?"completed ":"")+
-        (entry.occupant==="Tenant"?"tenant":"owner");
-      if(selectedFlats.has(key)) cell.classList.add("selected");
-      cell.innerText=key;
-      cell.onclick=()=>toggleSelection(key);
-      col.appendChild(cell);
-    });
+    filtered
+      .filter(d=>d.block===letter)
+      .sort((a,b)=>a.number-b.number)
+      .forEach(entry=>{
+        const key=entry.block+" "+entry.number;
+        const cell=document.createElement("div");
+        cell.className="cell "+
+          (entry.completed?"completed ":"")+
+          (entry.occupant==="Tenant"?"tenant":"owner");
+        if(selectedFlats.has(key)) cell.classList.add("selected");
+        cell.innerText=key;
+        cell.onclick=()=>toggleSelection(key);
+        col.appendChild(cell);
+      });
 
     grid.appendChild(col);
   });
@@ -326,8 +352,7 @@ function render(){
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
-  document.getElementById("inputData").value=
-    Array.from(selectedFlats).join("\n");
+  inputData.value=Array.from(selectedFlats).join("\n");
   render();
 }
 
@@ -355,7 +380,7 @@ window.deleteSelected=async()=>{
 
 window.clearSelection=()=>{
   selectedFlats.clear();
-  document.getElementById("inputData").value="";
+  inputData.value="";
   render();
 }
 
@@ -368,7 +393,7 @@ window.setFilter=(f,btn)=>{
 }
 
 window.applySearch=()=>{
-  searchTerm=document.getElementById("searchBox").value.trim();
+  searchTerm=searchBox.value.trim();
   render();
 }
 
@@ -386,10 +411,8 @@ window.exportCSV=()=>{
   a.click();
 }
 
-/* Block Filters */
 function renderBlockFilters(){
-  const container=document.getElementById("blockFilters");
-  container.innerHTML="";
+  blockFilters.innerHTML="";
   VALID_BLOCKS.forEach(letter=>{
     const btn=document.createElement("button");
     btn.innerText=letter;
@@ -406,7 +429,7 @@ function renderBlockFilters(){
       renderBlockFilters();
       render();
     };
-    container.appendChild(btn);
+    blockFilters.appendChild(btn);
   });
 }
 </script>
