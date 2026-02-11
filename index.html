@@ -2,14 +2,14 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shared Block Manager</title>
+<title>Shared Block Manager (A-K)</title>
 <style>
 body { font-family: Arial; margin:20px; }
 textarea { width:100%; height:70px; padding:10px; }
 button { padding:6px 12px; margin:5px; }
 .grid {
   display:grid;
-  grid-template-columns: repeat(13, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap:10px;
   margin-top:20px;
 }
@@ -35,11 +35,11 @@ button { padding:6px 12px; margin:5px; }
 </head>
 <body>
 
-<h2>Shared Block Manager (Realtime)</h2>
+<h2>Shared Block Manager (A-K)</h2>
 
 <textarea id="inputData" placeholder="Enter:
 A 1101
-A 201"></textarea>
+C 502"></textarea>
 <br>
 <button onclick="addData()">Add</button>
 
@@ -47,13 +47,13 @@ A 201"></textarea>
 
 <div class="grid" id="grid"></div>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } 
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔴 REPLACE THIS WITH YOUR CONFIG */
+/* 🔴 REPLACE WITH YOUR FIREBASE CONFIG */
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
   authDomain: "jcc-block-manager.firebaseapp.com",
@@ -67,21 +67,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
+
 const grid = document.getElementById("grid");
 
 function render(data) {
   grid.innerHTML = "";
 
   const blocks = {};
-  for (let i=65;i<=90;i++) {
-    blocks[String.fromCharCode(i)] = [];
-  }
+  VALID_BLOCKS.forEach(letter => blocks[letter] = []);
 
   data.forEach(item=>{
-    blocks[item.block].push(item);
+    if (VALID_BLOCKS.includes(item.block)) {
+      blocks[item.block].push(item);
+    }
   });
 
-  for (let letter in blocks) {
+  VALID_BLOCKS.forEach(letter => {
     blocks[letter].sort((a,b)=>a.number-b.number);
 
     const col = document.createElement("div");
@@ -102,7 +104,7 @@ function render(data) {
     });
 
     grid.appendChild(col);
-  }
+  });
 }
 
 window.addData = async function() {
@@ -117,27 +119,18 @@ window.addData = async function() {
 
     const block=parts[0].toUpperCase();
     const number=parseInt(parts[1]);
+
+    if(!VALID_BLOCKS.includes(block)) {
+      alert("Invalid Block. Only A-K allowed.");
+      continue;
+    }
+
     if(isNaN(number)) continue;
 
-    // Prevent duplicates
-    const snapshot=await new Promise(resolve=>{
-      onSnapshot(collection(db,"blocks"),snap=>{
-        resolve(snap);
-      });
+    await addDoc(collection(db,"blocks"),{
+      block:block,
+      number:number
     });
-
-    let exists=false;
-    snapshot.forEach(doc=>{
-      const d=doc.data();
-      if(d.block===block && d.number===number) exists=true;
-    });
-
-    if(!exists){
-      await addDoc(collection(db,"blocks"),{
-        block:block,
-        number:number
-      });
-    }
   }
 
   document.getElementById("inputData").value="";
