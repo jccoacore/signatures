@@ -6,15 +6,9 @@
 <title>Block Tracker (A-K)</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 10px;
-}
+body { font-family: Arial; margin: 10px; }
 
-h2 {
-  text-align: center;
-  font-size: 18px;
-}
+h2 { text-align: center; font-size: 18px; }
 
 .stats {
   text-align: center;
@@ -37,11 +31,7 @@ button {
   cursor: pointer;
 }
 
-/* Filter buttons */
-.filters {
-  text-align: center;
-  margin-bottom: 8px;
-}
+.filters { text-align: center; margin-bottom: 8px; }
 
 .filter-btn {
   background: #f0f0f0;
@@ -54,7 +44,6 @@ button {
   color: white;
 }
 
-/* Grid */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -81,6 +70,8 @@ button {
   font-size: 11px;
   border-bottom: 1px solid #eee;
   text-align: center;
+  cursor: pointer;
+  user-select: none;
 }
 
 .owner { color: black; }
@@ -117,18 +108,17 @@ Completed: <span id="completedCount">0</span>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, updateDoc, doc, onSnapshot } 
+import { getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* 🔴 YOUR CONFIG */
 const firebaseConfig = {
-  apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
-  authDomain: "jcc-block-manager.firebaseapp.com",
-  projectId: "jcc-block-manager",
-  storageBucket: "jcc-block-manager.firebasestorage.app",
-  messagingSenderId: "1013753394181",
-  appId: "1:1013753394181:web:1c0a826908e3345877186c",
-  measurementId: "G-PN4D1DEF5N"
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_MSG_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -186,6 +176,27 @@ function render(data){
 
       cell.innerText = letter+" "+entry.number;
 
+      /* Toggle Complete on Tap */
+      cell.onclick = async () => {
+        await updateDoc(doc(db,"flats",entry.id),{
+          completed: !entry.completed
+        });
+      };
+
+      /* Long Press Delete */
+      let pressTimer;
+      cell.addEventListener("touchstart", () => {
+        pressTimer = setTimeout(async () => {
+          if(confirm("Delete "+letter+" "+entry.number+"?")){
+            await deleteDoc(doc(db,"flats",entry.id));
+          }
+        }, 800);
+      });
+
+      cell.addEventListener("touchend", () => {
+        clearTimeout(pressTimer);
+      });
+
       col.appendChild(cell);
     });
 
@@ -195,11 +206,9 @@ function render(data){
 
 window.setFilter = function(filter, btn){
   activeFilter = filter;
-
   document.querySelectorAll(".filter-btn")
     .forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-
   render(applyFilter(fullData));
 }
 
