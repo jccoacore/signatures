@@ -81,12 +81,8 @@ button {
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
-.block-btn.active { background:#1976d2; color:white; }
-.block-btn.inactive { background:#e0e0e0; color:#888; }
-.filter-btn.active { background:#1976d2; color:white; }
-
 .summary-card {
-  min-width:110px;
+  min-width:120px;
   padding:8px;
   border:1px solid #ddd;
   border-radius:6px;
@@ -148,6 +144,7 @@ button {
 <p>Logged in as: <span id="userEmail"></span></p>
 <button onclick="logout()">Logout</button>
 
+<!-- Society Stats -->
 <div class="stat-box">
   <div class="stat-item">Total: <span id="socTotal">0</span></div>
   <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
@@ -160,20 +157,10 @@ button {
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<div id="blockSummary" style="display:flex;overflow-x:auto;gap:10px;margin-bottom:10px;"></div>
+<!-- 🔥 TOP BLOCK DASHBOARD -->
+<div id="blockSummary" style="display:flex;overflow-x:auto;gap:10px;margin-bottom:15px;"></div>
 
 <input type="text" id="searchBox" placeholder="Search flat number">
-
-<div id="blockFilters"></div>
-
-<div>
-  <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
-  <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
-  <button class="filter-btn" onclick="setFilter('TENANT',this)">Tenants</button>
-  <button class="filter-btn" onclick="setFilter('COMPLETED',this)">Completed</button>
-  <button class="filter-btn" onclick="setFilter('PENDING',this)">Pending</button>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
 
 <textarea id="inputData" placeholder="Selected flats"></textarea>
 
@@ -209,9 +196,7 @@ const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
 
 let fullData=[];
 let selectedFlats=new Set();
-let activeFilter="ALL";
 let searchTerm="";
-let activeBlocks=new Set(VALID_BLOCKS);
 
 const grid=document.getElementById("grid");
 
@@ -237,7 +222,6 @@ onAuthStateChanged(auth, user => {
     loginDiv.style.display = "none";
     appDiv.style.display = "block";
     userEmailSpan.innerText = user.email;
-    renderBlockFilters();
   } else {
     loginDiv.style.display = "block";
     appDiv.style.display = "none";
@@ -258,43 +242,13 @@ document.getElementById("searchBox")
     render();
 });
 
-/* Society Stats */
-function updateSocietyStats(){
-  const total=fullData.length;
-  const completed=fullData.filter(d=>d.completed).length;
-  const owners=fullData.filter(d=>d.occupant==="Owner").length;
-  const tenants=fullData.filter(d=>d.occupant==="Tenant").length;
-  const percent=total?Math.round((completed/total)*100):0;
-
-  document.getElementById("socTotal").innerText=total;
-  document.getElementById("socCompleted").innerText=completed;
-  document.getElementById("socOwners").innerText=owners;
-  document.getElementById("socTenants").innerText=tenants;
-  document.getElementById("socPercent").innerText=percent+"%";
-  document.getElementById("overallBar").style.width=percent+"%";
-}
-
-/* Apply Filters */
-function applyFilter(data){
-  let d=data.filter(x=>activeBlocks.has(x.block));
-  if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
-  if(activeFilter==="TENANT") d=d.filter(x=>x.occupant==="Tenant");
-  if(activeFilter==="COMPLETED") d=d.filter(x=>x.completed);
-  if(activeFilter==="PENDING") d=d.filter(x=>!x.completed);
-  if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
-  return d;
-}
-
 /* Render */
 function render(){
   grid.innerHTML="";
-  updateSocietyStats();
-
-  const filtered=applyFilter(fullData);
+  renderSocietyStats();
+  renderBlockSummary();
 
   VALID_BLOCKS.forEach(letter=>{
-    if(!activeBlocks.has(letter)) return;
-
     const flats=fullData.filter(d=>d.block===letter);
     const total=flats.length;
     const completed=flats.filter(d=>d.completed).length;
@@ -314,8 +268,8 @@ function render(){
       </div>
     `;
 
-    filtered
-      .filter(d=>d.block===letter)
+    flats
+      .filter(d=>!searchTerm || d.number.toString().includes(searchTerm))
       .sort((a,b)=>a.number-b.number)
       .forEach(entry=>{
         const key=entry.block+" "+entry.number;
@@ -333,6 +287,49 @@ function render(){
   });
 }
 
+/* Society Stats */
+function renderSocietyStats(){
+  const total=fullData.length;
+  const completed=fullData.filter(d=>d.completed).length;
+  const owners=fullData.filter(d=>d.occupant==="Owner").length;
+  const tenants=fullData.filter(d=>d.occupant==="Tenant").length;
+  const percent=total?Math.round((completed/total)*100):0;
+
+  document.getElementById("socTotal").innerText=total;
+  document.getElementById("socCompleted").innerText=completed;
+  document.getElementById("socOwners").innerText=owners;
+  document.getElementById("socTenants").innerText=tenants;
+  document.getElementById("socPercent").innerText=percent+"%";
+  document.getElementById("overallBar").style.width=percent+"%";
+}
+
+/* 🔥 Top Block Dashboard */
+function renderBlockSummary(){
+  const container=document.getElementById("blockSummary");
+  container.innerHTML="";
+  VALID_BLOCKS.forEach(letter=>{
+    const flats=fullData.filter(d=>d.block===letter);
+    const total=flats.length;
+    const completed=flats.filter(d=>d.completed).length;
+    const owners=flats.filter(d=>d.occupant==="Owner").length;
+    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
+    const percent=total?Math.round((completed/total)*100):0;
+
+    const card=document.createElement("div");
+    card.className="summary-card";
+    card.innerHTML=`
+      <div><strong>${letter}</strong></div>
+      <div class="summary-percent">${percent}%</div>
+      <div>${completed}/${total}</div>
+      <div>O:${owners} | T:${tenants}</div>
+      <div class="summary-bar-bg">
+        <div class="summary-bar-fill" style="width:${percent}%"></div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 /* Selection */
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
@@ -342,50 +339,31 @@ function toggleSelection(flat){
   render();
 }
 
-/* Filters */
-window.setFilter=(f,btn)=>{
-  activeFilter=f;
-  document.querySelectorAll(".filter-btn")
-    .forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
+window.markCompleted=async()=>{
+  for(const entry of fullData){
+    const key=entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await updateDoc(doc(db,"flats",entry.id),{completed:true});
+    }
+  }
+  clearSelection();
+}
+
+window.deleteSelected=async()=>{
+  if(!confirm("Delete selected flats?")) return;
+  for(const entry of fullData){
+    const key=entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await deleteDoc(doc(db,"flats",entry.id));
+    }
+  }
+  clearSelection();
+}
+
+window.clearSelection=()=>{
+  selectedFlats.clear();
+  document.getElementById("inputData").value="";
   render();
-}
-
-window.exportCSV=()=>{
-  const data=applyFilter(fullData);
-  let csv="Block,Number,Occupant,Completed\n";
-  data.forEach(d=>{
-    csv+=`${d.block},${d.number},${d.occupant},${d.completed}\n`;
-  });
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="block_tracker_export.csv";
-  a.click();
-}
-
-function renderBlockFilters(){
-  const container=document.getElementById("blockFilters");
-  container.innerHTML="";
-  VALID_BLOCKS.forEach(letter=>{
-    const btn=document.createElement("button");
-    btn.innerText=letter;
-    btn.className="block-btn";
-    if(activeBlocks.has(letter))
-      btn.classList.add("active");
-    else
-      btn.classList.add("inactive");
-    btn.onclick=()=>{
-      if(activeBlocks.has(letter))
-        activeBlocks.delete(letter);
-      else
-        activeBlocks.add(letter);
-      renderBlockFilters();
-      render();
-    };
-    container.appendChild(btn);
-  });
 }
 </script>
 
