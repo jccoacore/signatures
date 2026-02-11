@@ -148,7 +148,6 @@ button {
 <p>Logged in as: <span id="userEmail"></span></p>
 <button onclick="logout()">Logout</button>
 
-<!-- Society Stats -->
 <div class="stat-box">
   <div class="stat-item">Total: <span id="socTotal">0</span></div>
   <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
@@ -161,10 +160,9 @@ button {
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<!-- Block Summary Strip -->
 <div id="blockSummary" style="display:flex;overflow-x:auto;gap:10px;margin-bottom:10px;"></div>
 
-<input type="text" id="searchBox" placeholder="Search flat number" oninput="applySearch()">
+<input type="text" id="searchBox" placeholder="Search flat number">
 
 <div id="blockFilters"></div>
 
@@ -217,25 +215,32 @@ let activeBlocks=new Set(VALID_BLOCKS);
 
 const grid=document.getElementById("grid");
 
-/* AUTH */
-window.login=async()=>{
-  try{
-    await signInWithEmailAndPassword(auth,email.value,password.value);
-  }catch(err){
-    loginError.innerText=err.message;
+/* LOGIN */
+window.login = async () => {
+  const emailInput = document.getElementById("email").value;
+  const passwordInput = document.getElementById("password").value;
+  try {
+    await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+  } catch (err) {
+    document.getElementById("loginError").innerText = err.message;
   }
-}
-window.logout=async()=>{ await signOut(auth); }
+};
 
-onAuthStateChanged(auth,user=>{
-  if(user){
-    login.style.display="none";
-    app.style.display="block";
-    userEmail.innerText=user.email;
+window.logout = async () => { await signOut(auth); };
+
+onAuthStateChanged(auth, user => {
+  const loginDiv = document.getElementById("login");
+  const appDiv = document.getElementById("app");
+  const userEmailSpan = document.getElementById("userEmail");
+
+  if (user) {
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    userEmailSpan.innerText = user.email;
     renderBlockFilters();
-  }else{
-    login.style.display="block";
-    app.style.display="none";
+  } else {
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
   }
 });
 
@@ -246,6 +251,13 @@ onSnapshot(collection(db,"flats"),snapshot=>{
   render();
 });
 
+/* Search */
+document.getElementById("searchBox")
+  .addEventListener("input",e=>{
+    searchTerm=e.target.value.trim();
+    render();
+});
+
 /* Society Stats */
 function updateSocietyStats(){
   const total=fullData.length;
@@ -254,41 +266,15 @@ function updateSocietyStats(){
   const tenants=fullData.filter(d=>d.occupant==="Tenant").length;
   const percent=total?Math.round((completed/total)*100):0;
 
-  socTotal.innerText=total;
-  socCompleted.innerText=completed;
-  socOwners.innerText=owners;
-  socTenants.innerText=tenants;
-  socPercent.innerText=percent+"%";
-  overallBar.style.width=percent+"%";
+  document.getElementById("socTotal").innerText=total;
+  document.getElementById("socCompleted").innerText=completed;
+  document.getElementById("socOwners").innerText=owners;
+  document.getElementById("socTenants").innerText=tenants;
+  document.getElementById("socPercent").innerText=percent+"%";
+  document.getElementById("overallBar").style.width=percent+"%";
 }
 
-/* Block Summary */
-function renderBlockSummary(){
-  blockSummary.innerHTML="";
-  VALID_BLOCKS.forEach(letter=>{
-    const flats=fullData.filter(d=>d.block===letter);
-    const total=flats.length;
-    const completed=flats.filter(d=>d.completed).length;
-    const owners=flats.filter(d=>d.occupant==="Owner").length;
-    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
-    const percent=total?Math.round((completed/total)*100):0;
-
-    const card=document.createElement("div");
-    card.className="summary-card";
-    card.innerHTML=`
-      <div><strong>${letter}</strong></div>
-      <div class="summary-percent">${percent}%</div>
-      <div>${completed}/${total}</div>
-      <div>O:${owners} | T:${tenants}</div>
-      <div class="summary-bar-bg">
-        <div class="summary-bar-fill" style="width:${percent}%"></div>
-      </div>
-    `;
-    blockSummary.appendChild(card);
-  });
-}
-
-/* Filtering */
+/* Apply Filters */
 function applyFilter(data){
   let d=data.filter(x=>activeBlocks.has(x.block));
   if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
@@ -299,11 +285,10 @@ function applyFilter(data){
   return d;
 }
 
-/* Render Grid (Serial A → K order) */
+/* Render */
 function render(){
   grid.innerHTML="";
   updateSocietyStats();
-  renderBlockSummary();
 
   const filtered=applyFilter(fullData);
 
@@ -352,48 +337,17 @@ function render(){
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
-  inputData.value=Array.from(selectedFlats).join("\n");
+  document.getElementById("inputData").value=
+    Array.from(selectedFlats).join("\n");
   render();
 }
 
-/* Actions */
-window.markCompleted=async()=>{
-  for(const entry of fullData){
-    const key=entry.block+" "+entry.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",entry.id),{completed:true});
-    }
-  }
-  clearSelection();
-}
-
-window.deleteSelected=async()=>{
-  if(!confirm("Delete selected flats?")) return;
-  for(const entry of fullData){
-    const key=entry.block+" "+entry.number;
-    if(selectedFlats.has(key)){
-      await deleteDoc(doc(db,"flats",entry.id));
-    }
-  }
-  clearSelection();
-}
-
-window.clearSelection=()=>{
-  selectedFlats.clear();
-  inputData.value="";
-  render();
-}
-
+/* Filters */
 window.setFilter=(f,btn)=>{
   activeFilter=f;
   document.querySelectorAll(".filter-btn")
     .forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
-  render();
-}
-
-window.applySearch=()=>{
-  searchTerm=searchBox.value.trim();
   render();
 }
 
@@ -412,7 +366,8 @@ window.exportCSV=()=>{
 }
 
 function renderBlockFilters(){
-  blockFilters.innerHTML="";
+  const container=document.getElementById("blockFilters");
+  container.innerHTML="";
   VALID_BLOCKS.forEach(letter=>{
     const btn=document.createElement("button");
     btn.innerText=letter;
@@ -429,7 +384,7 @@ function renderBlockFilters(){
       renderBlockFilters();
       render();
     };
-    blockFilters.appendChild(btn);
+    container.appendChild(btn);
   });
 }
 </script>
