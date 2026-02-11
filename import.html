@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>One-Time Firestore Import</title>
+<style>
+body { font-family: Arial; margin:40px; }
+button { padding:10px 20px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h2>🔥 One-Time CSV Import Tool</h2>
+<p>This will CLEAR existing flats collection and import fresh data.</p>
+
+<input type="file" id="csvFile" accept=".csv">
+<br>
+<button onclick="startImport()">Start Import</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* 🔴 REPLACE WITH YOUR FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
+  authDomain: "jcc-block-manager.firebaseapp.com",
+  projectId: "jcc-block-manager",
+  storageBucket: "jcc-block-manager.firebasestorage.app",
+  messagingSenderId: "1013753394181",
+  appId: "1:1013753394181:web:1c0a826908e3345877186c",
+  measurementId: "G-PN4D1DEF5N"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
+
+window.startImport = async function() {
+
+  const file = document.getElementById("csvFile").files[0];
+  if(!file){
+    alert("Upload CSV first.");
+    return;
+  }
+
+  if(!confirm("This will DELETE all existing flats. Continue?")) return;
+
+  // 1️⃣ Delete existing data
+  const snapshot = await getDocs(collection(db,"flats"));
+  for (let d of snapshot.docs) {
+    await deleteDoc(doc(db,"flats",d.id));
+  }
+
+  console.log("Old data cleared.");
+
+  // 2️⃣ Read CSV
+  const text = await file.text();
+  const rows = text.split("\n");
+
+  // Identify column indexes
+  const headers = rows[0].split(",");
+  const flatIndex = headers.indexOf("Flat");
+  const occupantIndex = headers.indexOf("Occupant Type");
+
+  if(flatIndex === -1 || occupantIndex === -1){
+    alert("Required columns not found.");
+    return;
+  }
+
+  let importCount = 0;
+
+  for(let i=1; i<rows.length; i++){
+    const cols = rows[i].split(",");
+    if(cols.length < headers.length) continue;
+
+    const flatRaw = cols[flatIndex].trim();
+    const occupant = cols[occupantIndex].trim();
+
+    if(!flatRaw) continue;
+
+    const parts = flatRaw.split(" ");
+    if(parts.length < 2) continue;
+
+    const block = parts[0].toUpperCase();
+    const number = parseInt(parts[1]);
+
+    if(!VALID_BLOCKS.includes(block) || isNaN(number)) continue;
+
+    await addDoc(collection(db,"flats"),{
+      block: block,
+      number: number,
+      occupant: occupant,
+      completed: false
+    });
+
+    importCount++;
+  }
+
+  alert("Import Completed. Flats imported: " + importCount);
+};
+</script>
+
+</body>
+</html>
