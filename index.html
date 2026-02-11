@@ -38,23 +38,10 @@ textarea, input[type="text"] {
 }
 
 button {
-  padding: 5px 8px;
+  padding: 6px 10px;
   font-size: 12px;
   margin: 3px;
   cursor: pointer;
-}
-
-.filters { text-align: center; margin-bottom: 6px; }
-
-.filter-btn {
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.filter-btn.active {
-  background: #1976d2;
-  color: white;
 }
 
 .grid {
@@ -93,6 +80,12 @@ button {
   background: #1976d2;
   color: white !important;
 }
+
+/* Selected (not yet saved) */
+.selected {
+  background: orange;
+  color: white !important;
+}
 </style>
 </head>
 <body>
@@ -107,26 +100,19 @@ Overall: <span id="overallText">0 / 0 (0%)</span>
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<input type="text" id="searchBox" placeholder="Search flat number (e.g. 810)" oninput="applySearch()">
+<input type="text" id="searchBox" placeholder="Search flat number" oninput="applySearch()">
 
-<div class="filters">
-  <button class="filter-btn active" onclick="setFilter('ALL', this)">All</button>
-  <button class="filter-btn" onclick="setFilter('OWNER', this)">Owners</button>
-  <button class="filter-btn" onclick="setFilter('TENANT', this)">Tenants</button>
-  <button class="filter-btn" onclick="setFilter('COMPLETED', this)">Completed</button>
-  <button class="filter-btn" onclick="setFilter('PENDING', this)">Pending</button>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
+<textarea id="inputData" placeholder="Selected flats will appear here"></textarea>
 
-<textarea id="inputData" placeholder="A 101"></textarea>
-<br>
 <button onclick="markCompleted()">Mark Completed</button>
+<button onclick="deleteSelected()">Delete Selected</button>
+<button onclick="clearSelection()">Clear Selection</button>
 
 <div class="grid" id="grid"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, updateDoc, doc, onSnapshot } 
+import { getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot } 
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -144,31 +130,10 @@ const db = getFirestore(app);
 const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
 
 let fullData = [];
-let activeFilter = "ALL";
+let selectedFlats = new Set();
 let searchTerm = "";
 
 const grid = document.getElementById("grid");
-
-function applyFilter(data){
-  let filtered = data;
-
-  if(activeFilter === "OWNER")
-    filtered = filtered.filter(d => d.occupant === "Owner");
-  if(activeFilter === "TENANT")
-    filtered = filtered.filter(d => d.occupant === "Tenant");
-  if(activeFilter === "COMPLETED")
-    filtered = filtered.filter(d => d.completed);
-  if(activeFilter === "PENDING")
-    filtered = filtered.filter(d => !d.completed);
-
-  if(searchTerm){
-    filtered = filtered.filter(d => 
-      d.number.toString().includes(searchTerm)
-    );
-  }
-
-  return filtered;
-}
 
 function updateOverallProgress(){
   const total = fullData.length;
@@ -181,17 +146,16 @@ function updateOverallProgress(){
   document.getElementById("overallBar").style.width = percent + "%";
 }
 
-function render(data){
+function render(){
   grid.innerHTML = "";
   updateOverallProgress();
 
   const blocks = {};
   VALID_BLOCKS.forEach(letter => blocks[letter] = []);
 
-  data.forEach(item=>{
-    if(VALID_BLOCKS.includes(item.block)){
+  fullData.forEach(item=>{
+    if(item.number.toString().includes(searchTerm))
       blocks[item.block].push(item);
-    }
   });
 
   VALID_BLOCKS.forEach(letter=>{
@@ -202,18 +166,17 @@ function render(data){
     col.innerHTML=`<h4>${letter}</h4>`;
 
     blocks[letter].forEach(entry=>{
+      const key = entry.block+" "+entry.number;
       const cell=document.createElement("div");
+
       let occupantClass = entry.occupant === "Tenant" ? "tenant" : "owner";
       cell.className = "cell " + occupantClass;
       if(entry.completed) cell.classList.add("completed");
+      if(selectedFlats.has(key)) cell.classList.add("selected");
 
-      cell.innerText = letter+" "+entry.number;
+      cell.innerText = key;
 
-      cell.onclick = async () => {
-        await updateDoc(doc(db,"flats",entry.id),{
-          completed: !entry.completed
-        });
-      };
+      cell.onclick = () => toggleSelection(key);
 
       col.appendChild(cell);
     });
@@ -222,59 +185,54 @@ function render(data){
   });
 }
 
-window.setFilter = function(filter, btn){
-  activeFilter = filter;
-  document.querySelectorAll(".filter-btn")
-    .forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  render(applyFilter(fullData));
+function toggleSelection(flat){
+  if(selectedFlats.has(flat)){
+    selectedFlats.delete(flat);
+  } else {
+    selectedFlats.add(flat);
+  }
+  updateTextarea();
+  render();
+}
+
+function updateTextarea(){
+  document.getElementById("inputData").value =
+    Array.from(selectedFlats).join("\n");
+}
+
+window.markCompleted = async function(){
+  for(const entry of fullData){
+    const key = entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await updateDoc(doc(db,"flats",entry.id),{
+        completed: true
+      });
+    }
+  }
+  clearSelection();
+}
+
+window.deleteSelected = async function(){
+  if(!confirm("Delete selected flats?")) return;
+
+  for(const entry of fullData){
+    const key = entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await deleteDoc(doc(db,"flats",entry.id));
+    }
+  }
+  clearSelection();
+}
+
+window.clearSelection = function(){
+  selectedFlats.clear();
+  updateTextarea();
+  render();
 }
 
 window.applySearch = function(){
   searchTerm = document.getElementById("searchBox").value.trim();
-  render(applyFilter(fullData));
-}
-
-window.markCompleted = async function(){
-  const input=document.getElementById("inputData").value.trim();
-  if(!input) return;
-
-  const lines=input.split("\n");
-
-  fullData.forEach(async entry=>{
-    lines.forEach(async line=>{
-      const parts=line.trim().split(/\s+/);
-      if(parts.length<2) return;
-
-      const block=parts[0].toUpperCase();
-      const number=parseInt(parts[1]);
-
-      if(entry.block===block && entry.number===number){
-        await updateDoc(doc(db,"flats",entry.id),{
-          completed:true
-        });
-      }
-    });
-  });
-
-  document.getElementById("inputData").value="";
-}
-
-window.exportCSV = function(){
-  const dataToExport = applyFilter(fullData);
-
-  let csv = "Block,Number,Occupant,Completed\n";
-
-  dataToExport.forEach(d=>{
-    csv += `${d.block},${d.number},${d.occupant},${d.completed}\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "block_tracker_export.csv";
-  a.click();
+  render();
 }
 
 onSnapshot(collection(db,"flats"),snapshot=>{
@@ -282,7 +240,7 @@ onSnapshot(collection(db,"flats"),snapshot=>{
   snapshot.forEach(doc=>{
     fullData.push({id:doc.id,...doc.data()});
   });
-  render(applyFilter(fullData));
+  render();
 });
 </script>
 
