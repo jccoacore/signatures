@@ -4,99 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JCC Block Manager</title>
-
-<style>
-body { font-family: Arial; margin:10px; }
-h2 { text-align:center; }
-
-.stat-box { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; margin-bottom:8px; }
-.stat-item { background:#f3f3f3; padding:5px 8px; border-radius:6px; }
-
-.progress-container { height:6px; background:#ddd; border-radius:4px; overflow:hidden; margin-bottom:8px; }
-.progress-bar { height:6px; background:#4caf50; }
-
-.summary-card {
-  min-width:85px; padding:6px; border:1px solid #ddd;
-  border-radius:6px; text-align:center; font-size:10px;
-  background:#fafafa; cursor:pointer; transition:0.2s;
-}
-.summary-card.active { border:2px solid #1976d2; background:#e3f2fd; }
-.summary-card.inactive { opacity:0.35; }
-
-.summary-percent { font-weight:bold; font-size:11px; }
-.summary-bar-bg { height:4px; background:#ddd; margin-top:3px; }
-.summary-bar-fill { height:4px; background:#4caf50; }
-
-.grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
-.column { border:1px solid #ddd; border-radius:6px; overflow:hidden; }
-.column h4 { margin:0; padding:5px; background:#f3f3f3; font-size:11px; text-align:center; }
-
-.block-progress-bg { height:5px; background:#ddd; }
-.block-progress-fill { height:5px; background:#4caf50; }
-
-.cell { padding:3px; font-size:10px; border-bottom:1px solid #eee; text-align:center; cursor:pointer; }
-.owner { color:black; }
-.tenant { color:red; }
-.completed { background:#1976d2; color:white !important; }
-.selected { background:orange; color:white !important; }
-
-button { padding:5px 8px; margin:3px; font-size:11px; cursor:pointer; }
-.filter-btn.active { background:#1976d2; color:white; }
-
-input, textarea { width:100%; padding:5px; margin-bottom:5px; font-size:12px; }
-
-#login { margin-top:80px; text-align:center; }
-#app { display:none; }
-</style>
 </head>
 <body>
 
 <div id="login">
-  <h2>Secure Login</h2>
+  <h2>Login</h2>
   <input type="email" id="email" placeholder="Email"><br>
   <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
+  <button id="loginBtn">Login</button>
   <p id="loginError" style="color:red;"></p>
 </div>
 
-<div id="app">
+<div id="app" style="display:none;">
+  <h2>Block Tracker</h2>
+  <p>Logged in as: <span id="userEmail"></span></p>
+  <button id="logoutBtn">Logout</button>
 
-<h2>JCC Block Completion Tracker</h2>
-<p>Logged in as: <span id="userEmail"></span></p>
-<button onclick="logout()">Logout</button>
+  <textarea id="inputData" placeholder="Selected flats"></textarea><br>
 
-<div class="stat-box">
-  <div class="stat-item">Total: <span id="socTotal">0</span></div>
-  <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
-  <div class="stat-item">Owners: <span id="socOwners">0</span></div>
-  <div class="stat-item">Tenants: <span id="socTenants">0</span></div>
-  <div class="stat-item">Overall %: <span id="socPercent">0%</span></div>
-</div>
+  <button id="markBtn">Mark Completed</button>
+  <button id="unmarkBtn">Unmark Completed</button>
+  <button id="clearBtn">Clear Selection</button>
 
-<div class="progress-container">
-  <div id="overallBar" class="progress-bar"></div>
-</div>
-
-<div id="blockSummary" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
-
-<input type="text" id="searchBox" placeholder="Search flat number">
-
-<div>
-  <button class="filter-btn active" onclick="setFilter('ALL',this)">All</button>
-  <button class="filter-btn" onclick="setFilter('OWNER',this)">Owners</button>
-  <button class="filter-btn" onclick="setFilter('TENANT',this)">Tenants</button>
-  <button class="filter-btn" onclick="setFilter('COMPLETED',this)">Completed</button>
-  <button class="filter-btn" onclick="setFilter('PENDING',this)">Pending</button>
-</div>
-
-<textarea id="inputData" placeholder="Selected flats"></textarea>
-
-<button onclick="markCompleted()">Mark Completed</button>
-<button onclick="unmarkCompleted()">Unmark Completed</button>
-<button onclick="clearSelection()">Clear Selection</button>
-
-<div class="grid" id="grid"></div>
-
+  <div id="grid"></div>
 </div>
 
 <script type="module">
@@ -119,70 +49,91 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const VALID_BLOCKS = ["A","B","C","D","E","F","G","H","I","J","K"];
+const loginDiv = document.getElementById("login");
+const appDiv = document.getElementById("app");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginError = document.getElementById("loginError");
+const userEmail = document.getElementById("userEmail");
+const markBtn = document.getElementById("markBtn");
+const unmarkBtn = document.getElementById("unmarkBtn");
+const clearBtn = document.getElementById("clearBtn");
+const inputData = document.getElementById("inputData");
 
-let fullData=[];
-let selectedFlats=new Set();
-let activeBlocks=new Set(VALID_BLOCKS);
-let activeFilter="ALL";
-let searchTerm="";
-
-const grid=document.getElementById("grid");
+let fullData = [];
+let selectedFlats = new Set();
 
 /* AUTH */
-window.login=async()=>{
-  try{
-    await signInWithEmailAndPassword(auth,email.value,password.value);
-  }catch(e){
-    loginError.innerText=e.message;
-  }
-};
-window.logout=()=>signOut(auth);
 
-onAuthStateChanged(auth,user=>{
-  if(user){
-    login.style.display="none";
-    app.style.display="block";
-    userEmail.innerText=user.email;
-  }else{
-    login.style.display="block";
-    app.style.display="none";
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithEmailAndPassword(
+      auth,
+      emailInput.value,
+      passwordInput.value
+    );
+  } catch (err) {
+    loginError.innerText = err.message;
   }
 });
 
-/* DATA */
-onSnapshot(collection(db,"flats"),snap=>{
-  fullData=[];
-  snap.forEach(d=>fullData.push({id:d.id,...d.data()}));
-  render();
+logoutBtn.addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    userEmail.innerText = user.email;
+  } else {
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
+  }
+});
+
+/* REALTIME DATA */
+
+onSnapshot(collection(db, "flats"), snapshot => {
+  fullData = [];
+  snapshot.forEach(docSnap => {
+    fullData.push({ id: docSnap.id, ...docSnap.data() });
+  });
 });
 
 /* ACTIONS */
-window.markCompleted=async()=>{
-  for(const e of fullData){
-    const key=e.block+" "+e.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",e.id),{completed:true});
+
+markBtn.addEventListener("click", async () => {
+  for (const entry of fullData) {
+    const key = entry.block + " " + entry.number;
+    if (selectedFlats.has(key)) {
+      await updateDoc(doc(db, "flats", entry.id), {
+        completed: true
+      });
     }
   }
-  clearSelection();
-};
-
-window.unmarkCompleted=async()=>{
-  for(const e of fullData){
-    const key=e.block+" "+e.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",e.id),{completed:false});
-    }
-  }
-  clearSelection();
-};
-
-window.clearSelection=()=>{
   selectedFlats.clear();
-  inputData.value="";
-  render();
-};
+  inputData.value = "";
+});
+
+unmarkBtn.addEventListener("click", async () => {
+  for (const entry of fullData) {
+    const key = entry.block + " " + entry.number;
+    if (selectedFlats.has(key)) {
+      await updateDoc(doc(db, "flats", entry.id), {
+        completed: false
+      });
+    }
+  }
+  selectedFlats.clear();
+  inputData.value = "";
+});
+
+clearBtn.addEventListener("click", () => {
+  selectedFlats.clear();
+  inputData.value = "";
+});
 </script>
+
 </body>
 </html>
