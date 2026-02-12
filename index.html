@@ -9,7 +9,7 @@
 body { font-family: Arial; margin:10px; }
 h2 { text-align:center; }
 
-/* Compact Top Stats */
+/* Top Society Stats */
 .stat-box {
   display:flex;
   gap:12px;
@@ -17,14 +17,26 @@ h2 { text-align:center; }
   margin-bottom:8px;
   font-size:12px;
 }
-
 .stat-item {
   background:#f3f3f3;
   padding:5px 8px;
   border-radius:6px;
 }
 
-/* Smaller Dashboard Cards */
+/* Overall Progress */
+.progress-container {
+  height:6px;
+  background:#ddd;
+  border-radius:4px;
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.progress-bar {
+  height:6px;
+  background:#4caf50;
+}
+
+/* Compact Block Dashboard */
 .summary-card {
   min-width:85px;
   padding:6px;
@@ -36,27 +48,22 @@ h2 { text-align:center; }
   cursor:pointer;
   transition:0.2s;
 }
-
 .summary-card.active {
   border:2px solid #1976d2;
   background:#e3f2fd;
 }
-
 .summary-card.inactive {
-  opacity:0.4;
+  opacity:0.35;
 }
-
 .summary-percent {
   font-weight:bold;
   font-size:11px;
 }
-
 .summary-bar-bg {
   height:4px;
   background:#ddd;
   margin-top:3px;
 }
-
 .summary-bar-fill {
   height:4px;
   background:#4caf50;
@@ -68,13 +75,11 @@ h2 { text-align:center; }
   grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
   gap:10px;
 }
-
 .column {
   border:1px solid #ddd;
   border-radius:6px;
   overflow:hidden;
 }
-
 .column h4 {
   margin:0;
   padding:5px;
@@ -82,12 +87,10 @@ h2 { text-align:center; }
   text-align:center;
   font-size:11px;
 }
-
 .block-progress-bg {
   height:5px;
   background:#ddd;
 }
-
 .block-progress-fill {
   height:5px;
   background:#4caf50;
@@ -100,7 +103,6 @@ h2 { text-align:center; }
   text-align:center;
   cursor:pointer;
 }
-
 .owner { color:black; }
 .tenant { color:red; }
 .completed { background:#1976d2; color:white !important; }
@@ -121,23 +123,9 @@ button {
   border:1px solid #ccc;
   background:#f5f5f5;
 }
-
 .filter-btn.active {
   background:#1976d2;
   color:white;
-}
-
-.progress-container {
-  height:6px;
-  background:#ddd;
-  border-radius:4px;
-  overflow:hidden;
-  margin-bottom:8px;
-}
-
-.progress-bar {
-  height:6px;
-  background:#4caf50;
 }
 
 #login { margin-top:80px; text-align:center; }
@@ -146,6 +134,7 @@ button {
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login">
   <h2>Secure Login</h2>
   <input type="email" id="email" placeholder="Email"><br>
@@ -154,6 +143,7 @@ button {
   <p id="loginError" style="color:red;"></p>
 </div>
 
+<!-- APP -->
 <div id="app">
 
 <h2>JCC Block Completion Tracker</h2>
@@ -174,7 +164,7 @@ button {
   <div id="overallBar" class="progress-bar" style="width:0%"></div>
 </div>
 
-<!-- 🔥 BLOCK DASHBOARD (FILTER NOW) -->
+<!-- Block Dashboard = Filter -->
 <div id="blockSummary" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
 
 <input type="text" id="searchBox" placeholder="Search flat number">
@@ -239,7 +229,6 @@ window.login = async () => {
     document.getElementById("loginError").innerText = err.message;
   }
 };
-
 window.logout = async () => { await signOut(auth); };
 
 onAuthStateChanged(auth, user => {
@@ -253,7 +242,7 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-/* Firestore */
+/* Firestore realtime */
 onSnapshot(collection(db,"flats"),snapshot=>{
   fullData=[];
   snapshot.forEach(d=>fullData.push({id:d.id,...d.data()}));
@@ -284,8 +273,8 @@ function applyFilter(data){
 function render(){
   renderSocietyStats();
   renderBlockSummary();
-
   grid.innerHTML="";
+
   const filtered=applyFilter(fullData);
 
   VALID_BLOCKS.forEach(letter=>{
@@ -378,23 +367,53 @@ function renderSocietyStats(){
   document.getElementById("overallBar").style.width=percent+"%";
 }
 
-/* Owner/Tenant Filters */
+/* Filters */
 window.setFilter=(f,btn)=>{
   activeFilter=f;
   document.querySelectorAll(".filter-btn")
     .forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   render();
-}
+};
 
 /* Selection */
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
-  document.getElementById("inputData").value=
+
+  document.getElementById("inputData").value =
     Array.from(selectedFlats).join("\n");
+
   render();
 }
+
+/* Actions */
+window.markCompleted=async()=>{
+  for(const entry of fullData){
+    const key=entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await updateDoc(doc(db,"flats",entry.id),{completed:true});
+    }
+  }
+  clearSelection();
+};
+
+window.deleteSelected=async()=>{
+  if(!confirm("Delete selected flats?")) return;
+  for(const entry of fullData){
+    const key=entry.block+" "+entry.number;
+    if(selectedFlats.has(key)){
+      await deleteDoc(doc(db,"flats",entry.id));
+    }
+  }
+  clearSelection();
+};
+
+window.clearSelection=()=>{
+  selectedFlats.clear();
+  document.getElementById("inputData").value="";
+  render();
+};
 </script>
 
 </body>
