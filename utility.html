@@ -2,12 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Utility - Secure</title>
+<title>Secure Admin Utility</title>
 </head>
 <body>
 
-<!-- LOGIN SECTION -->
 <div id="loginSection">
   <h2>Admin Login</h2>
   <input type="email" id="emailInput" placeholder="Email"><br>
@@ -16,7 +14,6 @@
   <p id="loginError" style="color:red;"></p>
 </div>
 
-<!-- ADMIN PANEL -->
 <div id="adminSection" style="display:none;">
   <h2>Admin Utility</h2>
   <p>Logged in as: <span id="adminEmail"></span></p>
@@ -34,12 +31,12 @@
   <hr>
 
   <h3>Delete Flat</h3>
-  <input id="delBlockInput" placeholder="Block (A-K)">
+  <input id="delBlockInput" placeholder="Block">
   <input id="delNumberInput" type="number" placeholder="Flat Number">
   <br><br>
   <button id="deleteBtn">Delete Flat</button>
 
-  <p id="status" style="margin-top:10px;"></p>
+  <p id="status"></p>
 </div>
 
 <script type="module">
@@ -49,7 +46,6 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
   authDomain: "jcc-block-manager.firebaseapp.com",
@@ -63,7 +59,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* DOM REFERENCES */
 const loginSection = document.getElementById("loginSection");
 const adminSection = document.getElementById("adminSection");
 const emailInput = document.getElementById("emailInput");
@@ -72,19 +67,9 @@ const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const loginError = document.getElementById("loginError");
 const adminEmail = document.getElementById("adminEmail");
-
-const blockInput = document.getElementById("blockInput");
-const numberInput = document.getElementById("numberInput");
-const occupantInput = document.getElementById("occupantInput");
-
-const delBlockInput = document.getElementById("delBlockInput");
-const delNumberInput = document.getElementById("delNumberInput");
-
-const addBtn = document.getElementById("addBtn");
-const deleteBtn = document.getElementById("deleteBtn");
 const status = document.getElementById("status");
 
-/* AUTH */
+/* AUTH HANDLING */
 loginBtn.addEventListener("click", async () => {
   try {
     await signInWithEmailAndPassword(
@@ -94,6 +79,7 @@ loginBtn.addEventListener("click", async () => {
     );
   } catch (err) {
     loginError.innerText = err.message;
+    console.error("Login error:", err);
   }
 });
 
@@ -111,32 +97,42 @@ onAuthStateChanged(auth, user => {
 });
 
 /* ADD FLAT */
-addBtn.addEventListener("click", async () => {
-  if (!auth.currentUser) return;
+document.getElementById("addBtn").addEventListener("click", async () => {
+  if (!auth.currentUser) {
+    status.innerText = "Not authenticated!";
+    return;
+  }
 
   try {
-    await addDoc(collection(db, "flats"), {
-      block: blockInput.value.toUpperCase(),
-      number: Number(numberInput.value),
-      occupant: occupantInput.value,
+    const docRef = await addDoc(collection(db, "flats"), {
+      block: document.getElementById("blockInput").value.toUpperCase(),
+      number: Number(document.getElementById("numberInput").value),
+      occupant: document.getElementById("occupantInput").value,
       completed: false
     });
 
-    status.innerText = "Flat Added Successfully";
+    status.innerText = "Flat Added. ID: " + docRef.id;
+    console.log("Flat added:", docRef.id);
   } catch (err) {
-    status.innerText = err.message;
+    status.innerText = "Error: " + err.message;
+    console.error("Add error:", err);
   }
 });
 
 /* DELETE FLAT */
-deleteBtn.addEventListener("click", async () => {
-  if (!auth.currentUser) return;
+document.getElementById("deleteBtn").addEventListener("click", async () => {
+  if (!auth.currentUser) {
+    status.innerText = "Not authenticated!";
+    return;
+  }
 
   try {
     const q = query(
       collection(db, "flats"),
-      where("block", "==", delBlockInput.value.toUpperCase()),
-      where("number", "==", Number(delNumberInput.value))
+      where("block", "==",
+        document.getElementById("delBlockInput").value.toUpperCase()),
+      where("number", "==",
+        Number(document.getElementById("delNumberInput").value))
     );
 
     const snapshot = await getDocs(q);
@@ -150,9 +146,10 @@ deleteBtn.addEventListener("click", async () => {
       await deleteDoc(docSnap.ref);
     }
 
-    status.innerText = "Flat Deleted Successfully";
+    status.innerText = "Flat deleted successfully.";
   } catch (err) {
-    status.innerText = err.message;
+    status.innerText = "Error: " + err.message;
+    console.error("Delete error:", err);
   }
 });
 </script>
