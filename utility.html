@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Utility - Add/Delete Flats</title>
+</head>
+<body>
+<h2>Admin Utility</h2>
+
+Block: <input id="block"><br>
+Flat Number: <input id="number" type="number"><br>
+Occupant (Owner/Tenant): <input id="occupant"><br><br>
+
+<button onclick="addFlat()">Add Flat</button>
+<button onclick="deleteFlat()">Delete Flat</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIza...",
+  authDomain: "...",
+  projectId: "jcc-block-manager",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.addFlat=async()=>{
+  await addDoc(collection(db,"flats"),{
+    block:block.value.toUpperCase(),
+    number:Number(number.value),
+    occupant:occupant.value,
+    completed:false
+  });
+  alert("Flat Added");
+};
+
+window.deleteFlat=async()=>{
+  const q=query(
+    collection(db,"flats"),
+    where("block","==",block.value.toUpperCase()),
+    where("number","==",Number(number.value))
+  );
+
+  const snap=await getDocs(q);
+  snap.forEach(docRef=>{
+    deleteDoc(docRef.ref);
+  });
+
+  alert("Flat Deleted");
+};
+</script>
+</body>
+</html>
