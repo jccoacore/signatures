@@ -9,124 +9,41 @@
 body { font-family: Arial; margin:10px; }
 h2 { text-align:center; }
 
-/* Top Society Stats */
-.stat-box {
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  margin-bottom:8px;
-  font-size:12px;
-}
-.stat-item {
-  background:#f3f3f3;
-  padding:5px 8px;
-  border-radius:6px;
-}
+.stat-box { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; margin-bottom:8px; }
+.stat-item { background:#f3f3f3; padding:5px 8px; border-radius:6px; }
 
-/* Overall Progress */
-.progress-container {
-  height:6px;
-  background:#ddd;
-  border-radius:4px;
-  overflow:hidden;
-  margin-bottom:8px;
-}
-.progress-bar {
-  height:6px;
-  background:#4caf50;
-}
+.progress-container { height:6px; background:#ddd; border-radius:4px; overflow:hidden; margin-bottom:8px; }
+.progress-bar { height:6px; background:#4caf50; }
 
-/* Compact Block Dashboard */
 .summary-card {
-  min-width:85px;
-  padding:6px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  text-align:center;
-  font-size:10px;
-  background:#fafafa;
-  cursor:pointer;
-  transition:0.2s;
+  min-width:85px; padding:6px; border:1px solid #ddd;
+  border-radius:6px; text-align:center; font-size:10px;
+  background:#fafafa; cursor:pointer; transition:0.2s;
 }
-.summary-card.active {
-  border:2px solid #1976d2;
-  background:#e3f2fd;
-}
-.summary-card.inactive {
-  opacity:0.35;
-}
-.summary-percent {
-  font-weight:bold;
-  font-size:11px;
-}
-.summary-bar-bg {
-  height:4px;
-  background:#ddd;
-  margin-top:3px;
-}
-.summary-bar-fill {
-  height:4px;
-  background:#4caf50;
-}
+.summary-card.active { border:2px solid #1976d2; background:#e3f2fd; }
+.summary-card.inactive { opacity:0.35; }
 
-/* Grid */
-.grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-  gap:10px;
-}
-.column {
-  border:1px solid #ddd;
-  border-radius:6px;
-  overflow:hidden;
-}
-.column h4 {
-  margin:0;
-  padding:5px;
-  background:#f3f3f3;
-  text-align:center;
-  font-size:11px;
-}
-.block-progress-bg {
-  height:5px;
-  background:#ddd;
-}
-.block-progress-fill {
-  height:5px;
-  background:#4caf50;
-}
+.summary-percent { font-weight:bold; font-size:11px; }
+.summary-bar-bg { height:4px; background:#ddd; margin-top:3px; }
+.summary-bar-fill { height:4px; background:#4caf50; }
 
-.cell {
-  padding:3px;
-  font-size:10px;
-  border-bottom:1px solid #eee;
-  text-align:center;
-  cursor:pointer;
-}
+.grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.column { border:1px solid #ddd; border-radius:6px; overflow:hidden; }
+.column h4 { margin:0; padding:5px; background:#f3f3f3; font-size:11px; text-align:center; }
+
+.block-progress-bg { height:5px; background:#ddd; }
+.block-progress-fill { height:5px; background:#4caf50; }
+
+.cell { padding:3px; font-size:10px; border-bottom:1px solid #eee; text-align:center; cursor:pointer; }
 .owner { color:black; }
 .tenant { color:red; }
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
-input, textarea {
-  width:100%;
-  padding:5px;
-  margin-bottom:5px;
-  font-size:12px;
-}
+button { padding:5px 8px; margin:3px; font-size:11px; cursor:pointer; }
+.filter-btn.active { background:#1976d2; color:white; }
 
-button {
-  padding:5px 8px;
-  margin:3px;
-  font-size:11px;
-  cursor:pointer;
-  border:1px solid #ccc;
-  background:#f5f5f5;
-}
-.filter-btn.active {
-  background:#1976d2;
-  color:white;
-}
+input, textarea { width:100%; padding:5px; margin-bottom:5px; font-size:12px; }
 
 #login { margin-top:80px; text-align:center; }
 #app { display:none; }
@@ -134,7 +51,6 @@ button {
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <h2>Secure Login</h2>
   <input type="email" id="email" placeholder="Email"><br>
@@ -143,15 +59,12 @@ button {
   <p id="loginError" style="color:red;"></p>
 </div>
 
-<!-- APP -->
 <div id="app">
 
 <h2>JCC Block Completion Tracker</h2>
-
 <p>Logged in as: <span id="userEmail"></span></p>
 <button onclick="logout()">Logout</button>
 
-<!-- Society Stats -->
 <div class="stat-box">
   <div class="stat-item">Total: <span id="socTotal">0</span></div>
   <div class="stat-item">Completed: <span id="socCompleted">0</span></div>
@@ -161,10 +74,9 @@ button {
 </div>
 
 <div class="progress-container">
-  <div id="overallBar" class="progress-bar" style="width:0%"></div>
+  <div id="overallBar" class="progress-bar"></div>
 </div>
 
-<!-- Block Dashboard = Filter -->
 <div id="blockSummary" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
 
 <input type="text" id="searchBox" placeholder="Search flat number">
@@ -180,7 +92,7 @@ button {
 <textarea id="inputData" placeholder="Selected flats"></textarea>
 
 <button onclick="markCompleted()">Mark Completed</button>
-<button onclick="deleteSelected()">Delete Selected</button>
+<button onclick="unmarkCompleted()">Unmark Completed</button>
 <button onclick="clearSelection()">Clear Selection</button>
 
 <div class="grid" id="grid"></div>
@@ -191,7 +103,7 @@ button {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, updateDoc, deleteDoc, doc, onSnapshot }
+import { getFirestore, collection, updateDoc, doc, onSnapshot }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -217,193 +129,50 @@ let searchTerm="";
 
 const grid=document.getElementById("grid");
 
-/* LOGIN */
-window.login = async () => {
-  try {
-    await signInWithEmailAndPassword(
-      auth,
-      document.getElementById("email").value,
-      document.getElementById("password").value
-    );
-  } catch (err) {
-    document.getElementById("loginError").innerText = err.message;
+/* AUTH */
+window.login=async()=>{
+  try{
+    await signInWithEmailAndPassword(auth,email.value,password.value);
+  }catch(e){
+    loginError.innerText=e.message;
   }
 };
-window.logout = async () => { await signOut(auth); };
+window.logout=()=>signOut(auth);
 
-onAuthStateChanged(auth, user => {
-  if (user) {
-    document.getElementById("login").style.display="none";
-    document.getElementById("app").style.display="block";
-    document.getElementById("userEmail").innerText=user.email;
-  } else {
-    document.getElementById("login").style.display="block";
-    document.getElementById("app").style.display="none";
+onAuthStateChanged(auth,user=>{
+  if(user){
+    login.style.display="none";
+    app.style.display="block";
+    userEmail.innerText=user.email;
+  }else{
+    login.style.display="block";
+    app.style.display="none";
   }
 });
 
-/* Firestore realtime */
-onSnapshot(collection(db,"flats"),snapshot=>{
+/* DATA */
+onSnapshot(collection(db,"flats"),snap=>{
   fullData=[];
-  snapshot.forEach(d=>fullData.push({id:d.id,...d.data()}));
+  snap.forEach(d=>fullData.push({id:d.id,...d.data()}));
   render();
 });
 
-/* Search */
-document.getElementById("searchBox")
-  .addEventListener("input",e=>{
-    searchTerm=e.target.value.trim();
-    render();
-});
-
-/* Apply Filters */
-function applyFilter(data){
-  let d=data.filter(x=>activeBlocks.has(x.block));
-
-  if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
-  if(activeFilter==="TENANT") d=d.filter(x=>x.occupant==="Tenant");
-  if(activeFilter==="COMPLETED") d=d.filter(x=>x.completed);
-  if(activeFilter==="PENDING") d=d.filter(x=>!x.completed);
-  if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
-
-  return d;
-}
-
-/* Render */
-function render(){
-  renderSocietyStats();
-  renderBlockSummary();
-  grid.innerHTML="";
-
-  const filtered=applyFilter(fullData);
-
-  VALID_BLOCKS.forEach(letter=>{
-    if(!activeBlocks.has(letter)) return;
-
-    const flats=filtered.filter(d=>d.block===letter);
-    const total=fullData.filter(d=>d.block===letter).length;
-    const completed=fullData.filter(d=>d.block===letter && d.completed).length;
-    const owners=fullData.filter(d=>d.block===letter && d.occupant==="Owner").length;
-    const tenants=fullData.filter(d=>d.block===letter && d.occupant==="Tenant").length;
-    const percent=total?Math.round((completed/total)*100):0;
-
-    const col=document.createElement("div");
-    col.className="column";
-    col.innerHTML=`
-      <h4>${letter} (${completed}/${total}) ${percent}%<br>
-      O:${owners} | T:${tenants}</h4>
-      <div class="block-progress-bg">
-        <div class="block-progress-fill" style="width:${percent}%"></div>
-      </div>
-    `;
-
-    flats.sort((a,b)=>a.number-b.number).forEach(entry=>{
-      const key=entry.block+" "+entry.number;
-      const cell=document.createElement("div");
-      cell.className="cell "+
-        (entry.completed?"completed ":"")+
-        (entry.occupant==="Tenant"?"tenant":"owner");
-      if(selectedFlats.has(key)) cell.classList.add("selected");
-      cell.innerText=key;
-      cell.onclick=()=>toggleSelection(key);
-      col.appendChild(cell);
-    });
-
-    grid.appendChild(col);
-  });
-}
-
-/* Dashboard as Filter */
-function renderBlockSummary(){
-  const container=document.getElementById("blockSummary");
-  container.innerHTML="";
-
-  VALID_BLOCKS.forEach(letter=>{
-    const flats=fullData.filter(d=>d.block===letter);
-    const total=flats.length;
-    const completed=flats.filter(d=>d.completed).length;
-    const owners=flats.filter(d=>d.occupant==="Owner").length;
-    const tenants=flats.filter(d=>d.occupant==="Tenant").length;
-    const percent=total?Math.round((completed/total)*100):0;
-
-    const card=document.createElement("div");
-    card.className="summary-card";
-    if(activeBlocks.has(letter)) card.classList.add("active");
-    else card.classList.add("inactive");
-
-    card.innerHTML=`
-      <div><strong>${letter}</strong></div>
-      <div class="summary-percent">${percent}%</div>
-      <div>${completed}/${total}</div>
-      <div>O:${owners} | T:${tenants}</div>
-      <div class="summary-bar-bg">
-        <div class="summary-bar-fill" style="width:${percent}%"></div>
-      </div>
-    `;
-
-    card.onclick=()=>{
-      if(activeBlocks.has(letter)) activeBlocks.delete(letter);
-      else activeBlocks.add(letter);
-      render();
-    };
-
-    container.appendChild(card);
-  });
-}
-
-/* Society Stats */
-function renderSocietyStats(){
-  const total=fullData.length;
-  const completed=fullData.filter(d=>d.completed).length;
-  const owners=fullData.filter(d=>d.occupant==="Owner").length;
-  const tenants=fullData.filter(d=>d.occupant==="Tenant").length;
-  const percent=total?Math.round((completed/total)*100):0;
-
-  document.getElementById("socTotal").innerText=total;
-  document.getElementById("socCompleted").innerText=completed;
-  document.getElementById("socOwners").innerText=owners;
-  document.getElementById("socTenants").innerText=tenants;
-  document.getElementById("socPercent").innerText=percent+"%";
-  document.getElementById("overallBar").style.width=percent+"%";
-}
-
-/* Filters */
-window.setFilter=(f,btn)=>{
-  activeFilter=f;
-  document.querySelectorAll(".filter-btn")
-    .forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  render();
-};
-
-/* Selection */
-function toggleSelection(flat){
-  if(selectedFlats.has(flat)) selectedFlats.delete(flat);
-  else selectedFlats.add(flat);
-
-  document.getElementById("inputData").value =
-    Array.from(selectedFlats).join("\n");
-
-  render();
-}
-
-/* Actions */
+/* ACTIONS */
 window.markCompleted=async()=>{
-  for(const entry of fullData){
-    const key=entry.block+" "+entry.number;
+  for(const e of fullData){
+    const key=e.block+" "+e.number;
     if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",entry.id),{completed:true});
+      await updateDoc(doc(db,"flats",e.id),{completed:true});
     }
   }
   clearSelection();
 };
 
-window.deleteSelected=async()=>{
-  if(!confirm("Delete selected flats?")) return;
-  for(const entry of fullData){
-    const key=entry.block+" "+entry.number;
+window.unmarkCompleted=async()=>{
+  for(const e of fullData){
+    const key=e.block+" "+e.number;
     if(selectedFlats.has(key)){
-      await deleteDoc(doc(db,"flats",entry.id));
+      await updateDoc(doc(db,"flats",e.id),{completed:false});
     }
   }
   clearSelection();
@@ -411,10 +180,9 @@ window.deleteSelected=async()=>{
 
 window.clearSelection=()=>{
   selectedFlats.clear();
-  document.getElementById("inputData").value="";
+  inputData.value="";
   render();
 };
 </script>
-
 </body>
 </html>
