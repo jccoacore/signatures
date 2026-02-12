@@ -1,56 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin Utility - Add/Delete Flats</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Utility - Secure</title>
 </head>
 <body>
-<h2>Admin Utility</h2>
 
-Block: <input id="block"><br>
-Flat Number: <input id="number" type="number"><br>
-Occupant (Owner/Tenant): <input id="occupant"><br><br>
+<!-- LOGIN SECTION -->
+<div id="loginSection">
+  <h2>Admin Login</h2>
+  <input type="email" id="emailInput" placeholder="Email"><br>
+  <input type="password" id="passwordInput" placeholder="Password"><br>
+  <button id="loginBtn">Login</button>
+  <p id="loginError" style="color:red;"></p>
+</div>
 
-<button onclick="addFlat()">Add Flat</button>
-<button onclick="deleteFlat()">Delete Flat</button>
+<!-- ADMIN PANEL -->
+<div id="adminSection" style="display:none;">
+  <h2>Admin Utility</h2>
+  <p>Logged in as: <span id="adminEmail"></span></p>
+  <button id="logoutBtn">Logout</button>
+
+  <hr>
+
+  <h3>Add Flat</h3>
+  <input id="blockInput" placeholder="Block (A-K)">
+  <input id="numberInput" type="number" placeholder="Flat Number">
+  <input id="occupantInput" placeholder="Owner/Tenant">
+  <br><br>
+  <button id="addBtn">Add Flat</button>
+
+  <hr>
+
+  <h3>Delete Flat</h3>
+  <input id="delBlockInput" placeholder="Block (A-K)">
+  <input id="delNumberInput" type="number" placeholder="Flat Number">
+  <br><br>
+  <button id="deleteBtn">Delete Flat</button>
+
+  <p id="status" style="margin-top:10px;"></p>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+/* Firebase Config */
 const firebaseConfig = {
-  apiKey: "AIza...",
-  authDomain: "...",
+  apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
+  authDomain: "jcc-block-manager.firebaseapp.com",
   projectId: "jcc-block-manager",
+  storageBucket: "jcc-block-manager.firebasestorage.app",
+  messagingSenderId: "1013753394181",
+  appId: "1:1013753394181:web:1c0a826908e3345877186c"
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-window.addFlat=async()=>{
-  await addDoc(collection(db,"flats"),{
-    block:block.value.toUpperCase(),
-    number:Number(number.value),
-    occupant:occupant.value,
-    completed:false
-  });
-  alert("Flat Added");
-};
+/* DOM REFERENCES */
+const loginSection = document.getElementById("loginSection");
+const adminSection = document.getElementById("adminSection");
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginError = document.getElementById("loginError");
+const adminEmail = document.getElementById("adminEmail");
 
-window.deleteFlat=async()=>{
-  const q=query(
-    collection(db,"flats"),
-    where("block","==",block.value.toUpperCase()),
-    where("number","==",Number(number.value))
-  );
+const blockInput = document.getElementById("blockInput");
+const numberInput = document.getElementById("numberInput");
+const occupantInput = document.getElementById("occupantInput");
 
-  const snap=await getDocs(q);
-  snap.forEach(docRef=>{
-    deleteDoc(docRef.ref);
-  });
+const delBlockInput = document.getElementById("delBlockInput");
+const delNumberInput = document.getElementById("delNumberInput");
 
-  alert("Flat Deleted");
-};
+const addBtn = document.getElementById("addBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const status = document.getElementById("status");
+
+/* AUTH */
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithEmailAndPassword(
+      auth,
+      emailInput.value,
+      passwordInput.value
+    );
+  } catch (err) {
+    loginError.innerText = err.message;
+  }
+});
+
+logoutBtn.addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    loginSection.style.display = "none";
+    adminSection.style.display = "block";
+    adminEmail.innerText = user.email;
+  } else {
+    loginSection.style.display = "block";
+    adminSection.style.display = "none";
+  }
+});
+
+/* ADD FLAT */
+addBtn.addEventListener("click", async () => {
+  if (!auth.currentUser) return;
+
+  try {
+    await addDoc(collection(db, "flats"), {
+      block: blockInput.value.toUpperCase(),
+      number: Number(numberInput.value),
+      occupant: occupantInput.value,
+      completed: false
+    });
+
+    status.innerText = "Flat Added Successfully";
+  } catch (err) {
+    status.innerText = err.message;
+  }
+});
+
+/* DELETE FLAT */
+deleteBtn.addEventListener("click", async () => {
+  if (!auth.currentUser) return;
+
+  try {
+    const q = query(
+      collection(db, "flats"),
+      where("block", "==", delBlockInput.value.toUpperCase()),
+      where("number", "==", Number(delNumberInput.value))
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      status.innerText = "No matching flat found.";
+      return;
+    }
+
+    for (const docSnap of snapshot.docs) {
+      await deleteDoc(docSnap.ref);
+    }
+
+    status.innerText = "Flat Deleted Successfully";
+  } catch (err) {
+    status.innerText = err.message;
+  }
+});
 </script>
+
 </body>
 </html>
