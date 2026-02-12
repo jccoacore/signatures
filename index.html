@@ -160,6 +160,7 @@ button {
   <button id="markBtn">Mark Completed</button>
   <button id="unmarkBtn">Unmark Completed</button>
   <button id="clearBtn">Clear Selection</button>
+  <button onclick="manualReload()">Refresh</button>
 
   <div class="grid" id="grid"></div>
 </div>
@@ -352,6 +353,15 @@ function toggleSelection(flat){
   inputData.value=Array.from(selectedFlats).join("\n");
   render();
 }
+
+
+async function manualReload(){
+  const snap = await getDocs(collection(db,"flats"));
+  fullData=[];
+  snap.forEach(d=>fullData.push({id:d.id,...d.data()}));
+  render();
+}
+
 
 /* ACTIONS */
 document.getElementById("markBtn").onclick=async()=>{
