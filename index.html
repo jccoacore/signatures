@@ -216,25 +216,33 @@ const grid = document.getElementById("grid");
 const inputData = document.getElementById("inputData");
 
 /* AUTH */
+/* AUTH */
 loginBtn.addEventListener("click", async () => {
   try {
-    await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    await signInWithEmailAndPassword(
+      auth,
+      emailInput.value.trim(),
+      passwordInput.value.trim()
+    );
   } catch (err) {
     loginError.innerText = err.message;
+    console.error("Login error:", err);
   }
 });
+
 logoutBtn.addEventListener("click", () => signOut(auth));
 
 onAuthStateChanged(auth, user => {
   if (user) {
-    loginDiv.style.display="none";
-    appDiv.style.display="block";
-    userEmail.innerText=user.email;
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    userEmail.innerText = user.email;
   } else {
-    loginDiv.style.display="block";
-    appDiv.style.display="none";
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
   }
 });
+
 
 /* REALTIME */
 onSnapshot(collection(db,"flats"),snap=>{
