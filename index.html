@@ -26,10 +26,7 @@ h2 { margin-bottom:5px; }
   overflow:hidden;
   margin-bottom:8px;
 }
-.progress-bar {
-  height:6px;
-  background:#4caf50;
-}
+.progress-bar { height:6px; background:#4caf50; }
 
 .summary-card {
   min-width:80px;
@@ -44,28 +41,17 @@ h2 { margin-bottom:5px; }
   border:2px solid #1976d2;
   background:#e3f2fd;
 }
-.summary-card.inactive {
-  opacity:0.35;
-}
-.summary-bar-bg {
-  height:4px;
-  background:#ddd;
-  margin-top:3px;
-}
-.summary-bar-fill {
-  height:4px;
-  background:#4caf50;
-}
+.summary-card.inactive { opacity:0.35; }
+
+.summary-bar-bg { height:4px; background:#ddd; margin-top:3px; }
+.summary-bar-fill { height:4px; background:#4caf50; }
 
 .grid {
   display:grid;
   grid-template-columns: repeat(auto-fit,minmax(170px,1fr));
   gap:10px;
 }
-.column {
-  border:1px solid #ddd;
-  border-radius:5px;
-}
+.column { border:1px solid #ddd; border-radius:5px; }
 .column h4 {
   margin:0;
   padding:4px;
@@ -73,14 +59,10 @@ h2 { margin-bottom:5px; }
   background:#f3f3f3;
   text-align:center;
 }
-.block-progress-bg {
-  height:4px;
-  background:#ddd;
-}
-.block-progress-fill {
-  height:4px;
-  background:#4caf50;
-}
+
+.block-progress-bg { height:4px; background:#ddd; }
+.block-progress-fill { height:4px; background:#4caf50; }
+
 .cell {
   padding:3px;
   font-size:10px;
@@ -160,8 +142,6 @@ button {
     <button class="filter-btn" data-filter="TENANT">Tenants</button>
     <button class="filter-btn" data-filter="COMPLETED">Completed</button>
     <button class="filter-btn" data-filter="PENDING">Pending</button>
-
-    <!-- NEW Advanced Filters -->
     <button class="filter-btn" data-filter="OWNER_COMPLETED">Owner+Completed</button>
     <button class="filter-btn" data-filter="OWNER_PENDING">Owner+Pending</button>
     <button class="filter-btn" data-filter="TENANT_COMPLETED">Tenant+Completed</button>
@@ -173,8 +153,8 @@ button {
   <button id="markBtn">Mark Completed</button>
   <button id="unmarkBtn">Unmark Completed</button>
   <button id="clearBtn">Clear Selection</button>
-  <button onclick="downloadSnapshot()">Download CSV Snapshot</button>
-  <button onclick="manualReload()">Refresh</button>
+  <button id="downloadBtn">Download CSV Snapshot</button>
+  <button id="refreshBtn">Refresh</button>
 
   <div class="grid" id="grid"></div>
 </div>
@@ -185,6 +165,8 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, updateDoc, doc, onSnapshot, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+document.addEventListener("DOMContentLoaded", () => {
 
 const firebaseConfig = {
   apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
@@ -216,17 +198,12 @@ const grid = document.getElementById("grid");
 const inputData = document.getElementById("inputData");
 
 /* AUTH */
-/* AUTH */
 loginBtn.addEventListener("click", async () => {
   try {
-    await signInWithEmailAndPassword(
-      auth,
-      emailInput.value.trim(),
-      passwordInput.value.trim()
-    );
+    loginError.innerText = "";
+    await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value.trim());
   } catch (err) {
     loginError.innerText = err.message;
-    console.error("Login error:", err);
   }
 });
 
@@ -234,15 +211,18 @@ logoutBtn.addEventListener("click", () => signOut(auth));
 
 onAuthStateChanged(auth, user => {
   if (user) {
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    userEmail.innerText = user.email;
+    loginDiv.style.display="none";
+    appDiv.style.display="block";
+    userEmail.innerText=user.email;
   } else {
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
+    loginDiv.style.display="block";
+    appDiv.style.display="none";
   }
 });
 
+/* BUTTONS */
+document.getElementById("downloadBtn").addEventListener("click", downloadSnapshot);
+document.getElementById("refreshBtn").addEventListener("click", manualReload);
 
 /* REALTIME */
 onSnapshot(collection(db,"flats"),snap=>{
@@ -266,18 +246,16 @@ document.getElementById("searchBox")
 /* FILTER BUTTONS */
 document.querySelectorAll(".filter-btn").forEach(btn=>{
   btn.addEventListener("click",()=>{
-    document.querySelectorAll(".filter-btn")
-      .forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     activeFilter=btn.dataset.filter;
     render();
   });
 });
 
-/* APPLY FILTER */
+/* FILTER LOGIC */
 function applyFilter(data){
   let d=data.filter(x=>activeBlocks.has(x.block));
-
   switch(activeFilter){
     case "OWNER": d=d.filter(x=>x.occupant==="Owner"); break;
     case "TENANT": d=d.filter(x=>x.occupant==="Tenant"); break;
@@ -288,22 +266,20 @@ function applyFilter(data){
     case "TENANT_COMPLETED": d=d.filter(x=>x.occupant==="Tenant" && x.completed); break;
     case "TENANT_PENDING": d=d.filter(x=>x.occupant==="Tenant" && !x.completed); break;
   }
-
   if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
   return d;
 }
-  function render(){
+
+/* RENDER */
+function render(){
   renderStats();
   renderDashboard();
-
   grid.innerHTML="";
   const filtered=applyFilter(fullData);
 
   VALID_BLOCKS.forEach(letter=>{
     if(!activeBlocks.has(letter)) return;
-
     const flats=filtered.filter(f=>f.block===letter);
-
     const total=fullData.filter(f=>f.block===letter).length;
     const completed=fullData.filter(f=>f.block===letter && f.completed).length;
     const percent=total?Math.round((completed/total)*100):0;
@@ -319,7 +295,6 @@ function applyFilter(data){
 
     flats.sort((a,b)=>a.number-b.number).forEach(entry=>{
       const key=entry.block+" "+entry.number;
-
       const badge = entry.occupant==="Owner" ? "O" : "T";
 
       const cell=document.createElement("div");
@@ -331,9 +306,7 @@ function applyFilter(data){
 
       cell.innerHTML=`
         <span>${key}</span>
-        <span class="badge ${badge==="O"?"owner-badge":"tenant-badge"}">
-          ${badge}
-        </span>
+        <span class="badge ${badge==="O"?"owner-badge":"tenant-badge"}">${badge}</span>
       `;
 
       cell.onclick=()=>toggleSelection(key);
@@ -344,22 +317,19 @@ function applyFilter(data){
   });
 }
 
-/* DASHBOARD FILTER + BLOCK SUMMARY */
+/* DASHBOARD */
 function renderDashboard(){
   const container=document.getElementById("blockSummary");
   container.innerHTML="";
-
   VALID_BLOCKS.forEach(letter=>{
     const total=fullData.filter(f=>f.block===letter).length;
     const completed=fullData.filter(f=>f.block===letter && f.completed).length;
     const owners=fullData.filter(f=>f.block===letter && f.occupant==="Owner").length;
     const tenants=fullData.filter(f=>f.block===letter && f.occupant==="Tenant").length;
-
     const percent=total?Math.round((completed/total)*100):0;
 
     const card=document.createElement("div");
     card.className="summary-card";
-
     if(activeBlocks.has(letter)) card.classList.add("active");
     else card.classList.add("inactive");
 
@@ -383,7 +353,6 @@ function renderDashboard(){
   });
 }
 
-/* STATS */
 function renderStats(){
   const total=fullData.length;
   const completed=fullData.filter(f=>f.completed).length;
@@ -399,16 +368,13 @@ function renderStats(){
   document.getElementById("overallBar").style.width=percent+"%";
 }
 
-/* SELECTION */
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
-
   inputData.value=Array.from(selectedFlats).join("\n");
   render();
 }
 
-/* MANUAL REFRESH */
 async function manualReload(){
   const snap = await getDocs(collection(db,"flats"));
   fullData=[];
@@ -419,48 +385,22 @@ async function manualReload(){
     }
   });
   render();
-};
+}
 
-/* ACTIONS */
-document.getElementById("markBtn").onclick=async()=>{
-  for(const e of fullData){
-    const key=e.block+" "+e.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",e.id),{completed:true});
-    }
-  }
-  selectedFlats.clear();
-  inputData.value="";
-};
-
-document.getElementById("unmarkBtn").onclick=async()=>{
-  for(const e of fullData){
-    const key=e.block+" "+e.number;
-    if(selectedFlats.has(key)){
-      await updateDoc(doc(db,"flats",e.id),{completed:false});
-    }
-  }
-  selectedFlats.clear();
-  inputData.value="";
-};
-
-document.getElementById("clearBtn").onclick=()=>{
-  selectedFlats.clear();
-  inputData.value="";
-  render();
-};
-
-/* CSV SNAPSHOT */
-window.downloadSnapshot=function(){
+function downloadSnapshot(){
   let csv="Block,Flat Number,Occupant Type,Completed\n";
   fullData.forEach(f=>{
     csv+=`${f.block},${f.number},${f.occupant},${f.completed}\n`;
   });
-
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const blob=new Blob([csv],{type:"text/csv"});
   const link=document.createElement("a");
   link.href=URL.createObjectURL(blob);
   link.download="flats_snapshot.csv";
   link.click();
-};
+}
 
+});
+</script>
+
+</body>
+</html>
