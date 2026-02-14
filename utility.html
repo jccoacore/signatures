@@ -1,158 +1,1267 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Secure Admin Utility</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Utility — JCC Block Tracker</title>
+  <meta name="description" content="Admin utility for managing flats in the JCC Block Tracker database.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #f0f2f5;
+      --bg-secondary: #ffffff;
+      --bg-card: rgba(255, 255, 255, 0.85);
+      --bg-card-hover: rgba(255, 255, 255, 1);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --text-primary: #1a1a2e;
+      --text-secondary: #555770;
+      --text-muted: #8e90a6;
+      --accent-blue: #4f6df5;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --gradient-primary: linear-gradient(135deg, #4f6df5 0%, #8b5cf6 100%);
+      --gradient-green: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      --gradient-red: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-xl: 20px;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 25% 15%, rgba(79, 109, 245, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 75% 85%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Login ── */
+    #loginSection {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-card .logo {
+      width: 56px;
+      height: 56px;
+      background: var(--gradient-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 auto 24px;
+      color: white;
+      box-shadow: 0 4px 16px rgba(79, 109, 245, 0.35);
+    }
+
+    .login-card h2 {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .login-card .subtitle {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 13px;
+      margin-bottom: 32px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input,
+    .input-group select {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.12);
+      background: #fff;
+    }
+
+    .input-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--gradient-primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 8px;
+      box-shadow: 0 4px 14px rgba(79, 109, 245, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(79, 109, 245, 0.35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    #loginError {
+      color: var(--accent-red);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 12px;
+      min-height: 18px;
+    }
+
+    /* ── Admin Panel ── */
+    #adminSection {
+      display: none;
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .app-header .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .app-header .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient-primary);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      color: white;
+    }
+
+    .app-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .user-badge {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius-sm);
+      color: var(--accent-red);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.14);
+    }
+
+    .btn-back {
+      padding: 8px 16px;
+      background: rgba(79, 109, 245, 0.08);
+      border: 1px solid rgba(79, 109, 245, 0.2);
+      border-radius: var(--radius-sm);
+      color: var(--accent-blue);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-back:hover {
+      background: rgba(79, 109, 245, 0.15);
+    }
+
+    /* ── Panels ── */
+    .panels {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .panels {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel h3 .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .panel h3 .icon-add {
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .panel h3 .icon-list {
+      background: rgba(79, 109, 245, 0.1);
+    }
+
+    /* ── Add Form ── */
+    .add-form .input-group {
+      margin-bottom: 12px;
+    }
+
+    .add-form .input-group input,
+    .add-form .input-group select {
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    .btn-add {
+      width: 100%;
+      padding: 10px;
+      background: var(--gradient-green);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 4px;
+    }
+
+    .btn-add:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-add:active {
+      transform: translateY(0);
+    }
+
+    .add-status {
+      font-size: 12px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      display: none;
+    }
+
+    .add-status.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.1);
+      color: #047857;
+    }
+
+    .add-status.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.1);
+      color: #b91c1c;
+    }
+
+    /* ── Flat List ── */
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .list-header .stats {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .list-header .stats strong {
+      color: var(--text-primary);
+    }
+
+    .search-bar {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .search-bar::before {
+      content: '🔍';
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      opacity: 0.5;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 9px 14px 9px 36px;
+      background: #fff;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .search-bar input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.1);
+    }
+
+    .search-bar input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Block filter tabs */
+    .block-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .block-tab {
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .block-tab:hover {
+      border-color: rgba(0, 0, 0, 0.15);
+      color: var(--text-primary);
+    }
+
+    .block-tab.active {
+      background: var(--gradient-primary);
+      color: white;
+      border-color: transparent;
+    }
+
+    /* Delete bar */
+    .delete-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      animation: slideUp 0.2s ease;
+    }
+
+    .delete-bar.show {
+      display: flex;
+    }
+
+    .delete-bar .sel-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-red);
+      flex: 1;
+    }
+
+    .btn-delete-sel {
+      padding: 7px 16px;
+      background: var(--gradient-red);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-delete-sel:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-clear-sel {
+      padding: 7px 14px;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-clear-sel:hover {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--text-primary);
+    }
+
+    /* Flat grid */
+    .flat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 6px;
+    }
+
+    .flat-chip {
+      padding: 8px 6px;
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .flat-chip:hover {
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    .flat-chip .flat-label {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .flat-chip .flat-type {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.3px;
+    }
+
+    .flat-chip .type-owner {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent-green);
+    }
+
+    .flat-chip .type-tenant {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--accent-orange);
+    }
+
+    .flat-chip.selected {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: var(--accent-red);
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+    }
+
+    .flat-chip.selected .flat-label {
+      color: var(--accent-red);
+    }
+
+    /* Block section */
+    .block-section {
+      margin-bottom: 16px;
+      animation: slideUp 0.3s ease;
+    }
+
+    .block-section-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .block-section-header .block-count {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast-success {
+      background: linear-gradient(135deg, #059669, #34d399);
+      box-shadow: 0 4px 14px rgba(52, 211, 153, 0.4);
+    }
+
+    .toast-error {
+      background: linear-gradient(135deg, #dc2626, #f87171);
+      box-shadow: 0 4px 14px rgba(248, 113, 113, 0.4);
+    }
+
+    .toast-info {
+      background: var(--gradient-primary);
+      box-shadow: 0 4px 14px rgba(79, 109, 245, 0.4);
+    }
+
+    /* ── Confirm Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      animation: slideUp 0.25s ease;
+    }
+
+    .modal h4 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .modal p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions button {
+      padding: 9px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-modal-cancel {
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
+    }
+
+    .btn-modal-cancel:hover {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--text-primary);
+    }
+
+    .btn-modal-confirm {
+      background: var(--gradient-red);
+      border: none;
+      color: white;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-modal-confirm:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    }
+
+    /* ── Loading Spinner ── */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 13px;
+      gap: 10px;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--glass-border);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 32px 24px;
+      }
+
+      .panels {
+        gap: 14px;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .flat-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 4px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<div id="loginSection">
-  <h2>Admin Login</h2>
-  <input type="email" id="emailInput" placeholder="Email"><br>
-  <input type="password" id="passwordInput" placeholder="Password"><br>
-  <button id="loginBtn">Login</button>
-  <p id="loginError" style="color:red;"></p>
-</div>
+  <!-- Login -->
+  <div id="loginSection">
+    <div class="login-card">
+      <div class="logo">⚙</div>
+      <h2>Admin Utility</h2>
+      <p class="subtitle">Sign in to manage flat data</p>
+      <div class="input-group">
+        <label for="emailInput">Email</label>
+        <input type="email" id="emailInput" placeholder="admin@example.com">
+      </div>
+      <div class="input-group">
+        <label for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" placeholder="••••••••">
+      </div>
+      <button class="btn-primary" id="loginBtn">Sign In</button>
+      <p id="loginError"></p>
+    </div>
+  </div>
 
-<div id="adminSection" style="display:none;">
-  <h2>Admin Utility</h2>
-  <p>Logged in as: <span id="adminEmail"></span></p>
-  <button id="logoutBtn">Logout</button>
+  <!-- Admin Panel -->
+  <div id="adminSection">
+    <div class="app-header">
+      <div class="brand">
+        <div class="brand-icon">⚙</div>
+        <h2>Admin Utility</h2>
+      </div>
+      <div class="header-right">
+        <a href="index.html" class="btn-back">← Dashboard</a>
+        <span class="user-badge" id="adminEmail"></span>
+        <button class="btn-logout" id="logoutBtn">Sign Out</button>
+      </div>
+    </div>
 
-  <hr>
+    <div class="panels">
+      <!-- Left: Add Flat -->
+      <div class="panel">
+        <h3><span class="icon icon-add">➕</span> Add Flat</h3>
+        <div class="add-form">
+          <div class="input-group">
+            <label for="blockInput">Block</label>
+            <select id="blockInput">
+              <option value="">Select Block</option>
+              <option>A</option>
+              <option>B</option>
+              <option>C</option>
+              <option>D</option>
+              <option>E</option>
+              <option>F</option>
+              <option>G</option>
+              <option>H</option>
+              <option>I</option>
+              <option>J</option>
+              <option>K</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="numberInput">Flat Number</label>
+            <input type="number" id="numberInput" placeholder="e.g. 101">
+          </div>
+          <div class="input-group">
+            <label for="occupantInput">Occupant Type</label>
+            <select id="occupantInput">
+              <option value="">Select Type</option>
+              <option value="Owner">Owner</option>
+              <option value="Tenant">Tenant</option>
+            </select>
+          </div>
+          <button class="btn-add" id="addBtn">Add Flat</button>
+          <div id="addStatus" class="add-status"></div>
+        </div>
+      </div>
 
-  <h3>Add Flat</h3>
-  <input id="blockInput" placeholder="Block (A-K)">
-  <input id="numberInput" type="number" placeholder="Flat Number">
-  <input id="occupantInput" placeholder="Owner/Tenant">
-  <br><br>
-  <button id="addBtn">Add Flat</button>
+      <!-- Right: Flat List -->
+      <div class="panel">
+        <h3><span class="icon icon-list">📋</span> All Flats</h3>
 
-  <hr>
+        <div class="list-header">
+          <div class="stats">
+            Total: <strong id="totalCount">0</strong> &nbsp;|&nbsp;
+            Showing: <strong id="showingCount">0</strong>
+          </div>
+        </div>
 
-  <h3>Delete Flat</h3>
-  <input id="delBlockInput" placeholder="Block">
-  <input id="delNumberInput" type="number" placeholder="Flat Number">
-  <br><br>
-  <button id="deleteBtn">Delete Flat</button>
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Search flat number...">
+        </div>
 
-  <p id="status"></p>
-</div>
+        <div class="block-tabs" id="blockTabs">
+          <button class="block-tab active" data-block="ALL">All</button>
+        </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        <div class="delete-bar" id="deleteBar">
+          <span class="sel-count"><span id="selCount">0</span> flat(s) selected for deletion</span>
+          <button class="btn-clear-sel" id="clearSelBtn">Clear</button>
+          <button class="btn-delete-sel" id="deleteSelBtn">🗑 Delete Selected</button>
+        </div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
-  authDomain: "jcc-block-manager.firebaseapp.com",
-  projectId: "jcc-block-manager",
-  storageBucket: "jcc-block-manager.firebasestorage.app",
-  messagingSenderId: "1013753394181",
-  appId: "1:1013753394181:web:1c0a826908e3345877186c"
-};
+        <div id="flatList">
+          <div class="loading">
+            <div class="spinner"></div> Loading flats...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h4>⚠️ Confirm Deletion</h4>
+      <p id="confirmText">Are you sure you want to delete the selected flats?</p>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="cancelDeleteBtn">Cancel</button>
+        <button class="btn-modal-confirm" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
 
-const loginSection = document.getElementById("loginSection");
-const adminSection = document.getElementById("adminSection");
-const emailInput = document.getElementById("emailInput");
-const passwordInput = document.getElementById("passwordInput");
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const loginError = document.getElementById("loginError");
-const adminEmail = document.getElementById("adminEmail");
-const status = document.getElementById("status");
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 
-/* AUTH HANDLING */
-loginBtn.addEventListener("click", async () => {
-  try {
-    await signInWithEmailAndPassword(
-      auth,
-      emailInput.value,
-      passwordInput.value
-    );
-  } catch (err) {
-    loginError.innerText = err.message;
-    console.error("Login error:", err);
-  }
-});
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-logoutBtn.addEventListener("click", () => signOut(auth));
+    const firebaseConfig = {
+      apiKey: "AIzaSyBlmrGDdGBR2VItLa5iNqvy_GyC1Tp-YG4",
+      authDomain: "jcc-block-manager.firebaseapp.com",
+      projectId: "jcc-block-manager"
+    };
 
-onAuthStateChanged(auth, user => {
-  if (user) {
-    loginSection.style.display = "none";
-    adminSection.style.display = "block";
-    adminEmail.innerText = user.email;
-  } else {
-    loginSection.style.display = "block";
-    adminSection.style.display = "none";
-  }
-});
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-/* ADD FLAT */
-document.getElementById("addBtn").addEventListener("click", async () => {
-  if (!auth.currentUser) {
-    status.innerText = "Not authenticated!";
-    return;
-  }
+    const VALID_BLOCKS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
 
-  try {
-    const docRef = await addDoc(collection(db, "flats"), {
-      block: document.getElementById("blockInput").value.toUpperCase(),
-      number: Number(document.getElementById("numberInput").value),
-      occupant: document.getElementById("occupantInput").value,
-      completed: false
+    let allFlats = [];
+    let selectedIds = new Set();
+    let activeBlock = "ALL";
+    let searchTerm = "";
+    let unsubscribeSnapshot = null;
+
+    /* ── DOM refs ── */
+    const loginSection = document.getElementById("loginSection");
+    const adminSection = document.getElementById("adminSection");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const loginError = document.getElementById("loginError");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const adminEmail = document.getElementById("adminEmail");
+
+    /* ── Toast ── */
+    function showToast(msg, type = "info") {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className = "toast toast-" + type + " show";
+      setTimeout(() => t.classList.remove("show"), 2800);
+    }
+
+    /* ── AUTH ── */
+    loginBtn.addEventListener("click", async () => {
+      try {
+        loginError.innerText = "";
+        await signInWithEmailAndPassword(auth, emailInput.value.trim(), passwordInput.value.trim());
+      } catch (err) {
+        loginError.innerText = err.message;
+      }
     });
 
-    status.innerText = "Flat Added. ID: " + docRef.id;
-    console.log("Flat added:", docRef.id);
-  } catch (err) {
-    status.innerText = "Error: " + err.message;
-    console.error("Add error:", err);
-  }
-});
+    passwordInput.addEventListener("keydown", e => { if (e.key === "Enter") loginBtn.click(); });
+    logoutBtn.addEventListener("click", () => signOut(auth));
 
-/* DELETE FLAT */
-document.getElementById("deleteBtn").addEventListener("click", async () => {
-  if (!auth.currentUser) {
-    status.innerText = "Not authenticated!";
-    return;
-  }
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loginSection.style.display = "none";
+        adminSection.style.display = "block";
+        adminEmail.innerText = user.email;
+        startListener();
+      } else {
+        loginSection.style.display = "flex";
+        adminSection.style.display = "none";
+        stopListener();
+      }
+    });
 
-  try {
-    const q = query(
-      collection(db, "flats"),
-      where("block", "==",
-        document.getElementById("delBlockInput").value.toUpperCase()),
-      where("number", "==",
-        Number(document.getElementById("delNumberInput").value))
-    );
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      status.innerText = "No matching flat found.";
-      return;
+    /* ── REALTIME LISTENER ── */
+    function startListener() {
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+      unsubscribeSnapshot = onSnapshot(collection(db, "flats"), snap => {
+        allFlats = [];
+        snap.forEach(d => {
+          const data = d.data();
+          if (VALID_BLOCKS.includes(data.block)) {
+            allFlats.push({ id: d.id, ...data });
+          }
+        });
+        allFlats.sort((a, b) => {
+          if (a.block !== b.block) return a.block.localeCompare(b.block);
+          return a.number - b.number;
+        });
+        buildBlockTabs();
+        renderFlatList();
+      }, err => {
+        console.error("Listener error:", err);
+        showToast("Error loading data", "error");
+      });
     }
 
-    for (const docSnap of snapshot.docs) {
-      await deleteDoc(docSnap.ref);
+    function stopListener() {
+      if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+      allFlats = [];
+      selectedIds.clear();
     }
 
-    status.innerText = "Flat deleted successfully.";
-  } catch (err) {
-    status.innerText = "Error: " + err.message;
-    console.error("Delete error:", err);
-  }
-});
-</script>
+    /* ── BLOCK TABS ── */
+    function buildBlockTabs() {
+      const container = document.getElementById("blockTabs");
+      container.innerHTML = "";
 
+      const allTab = document.createElement("button");
+      allTab.className = "block-tab" + (activeBlock === "ALL" ? " active" : "");
+      allTab.textContent = "All";
+      allTab.dataset.block = "ALL";
+      allTab.onclick = () => { activeBlock = "ALL"; buildBlockTabs(); renderFlatList(); };
+      container.appendChild(allTab);
+
+      VALID_BLOCKS.forEach(b => {
+        const count = allFlats.filter(f => f.block === b).length;
+        if (count === 0) return;
+        const tab = document.createElement("button");
+        tab.className = "block-tab" + (activeBlock === b ? " active" : "");
+        tab.textContent = `${b} (${count})`;
+        tab.dataset.block = b;
+        tab.onclick = () => { activeBlock = b; buildBlockTabs(); renderFlatList(); };
+        container.appendChild(tab);
+      });
+    }
+
+    /* ── RENDER FLAT LIST ── */
+    function renderFlatList() {
+      const container = document.getElementById("flatList");
+      container.innerHTML = "";
+
+      let filtered = allFlats;
+      if (activeBlock !== "ALL") filtered = filtered.filter(f => f.block === activeBlock);
+      if (searchTerm) filtered = filtered.filter(f => f.number.toString().includes(searchTerm));
+
+      document.getElementById("totalCount").textContent = allFlats.length;
+      document.getElementById("showingCount").textContent = filtered.length;
+
+      // Clean up selection - remove any IDs no longer in dataset
+      for (const id of selectedIds) {
+        if (!allFlats.find(f => f.id === id)) selectedIds.delete(id);
+      }
+      updateDeleteBar();
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No flats found</div>';
+        return;
+      }
+
+      // Group by block
+      const grouped = {};
+      filtered.forEach(f => {
+        if (!grouped[f.block]) grouped[f.block] = [];
+        grouped[f.block].push(f);
+      });
+
+      Object.keys(grouped).sort().forEach(block => {
+        const section = document.createElement("div");
+        section.className = "block-section";
+
+        const header = document.createElement("div");
+        header.className = "block-section-header";
+        header.innerHTML = `
+      <span>Block ${block}</span>
+      <span class="block-count">${grouped[block].length} flats</span>
+    `;
+        section.appendChild(header);
+
+        const grid = document.createElement("div");
+        grid.className = "flat-grid";
+
+        grouped[block].forEach(flat => {
+          const chip = document.createElement("div");
+          chip.className = "flat-chip" + (selectedIds.has(flat.id) ? " selected" : "");
+
+          const typeClass = flat.occupant === "Owner" ? "type-owner" : "type-tenant";
+          const typeLabel = flat.occupant === "Owner" ? "OWN" : "TNT";
+
+          chip.innerHTML = `
+        <span class="flat-label">${flat.block} ${flat.number}</span>
+        <span class="flat-type ${typeClass}">${typeLabel}</span>
+      `;
+
+          chip.addEventListener("click", () => {
+            if (selectedIds.has(flat.id)) {
+              selectedIds.delete(flat.id);
+              chip.classList.remove("selected");
+            } else {
+              selectedIds.add(flat.id);
+              chip.classList.add("selected");
+            }
+            updateDeleteBar();
+          });
+
+          grid.appendChild(chip);
+        });
+
+        section.appendChild(grid);
+        container.appendChild(section);
+      });
+    }
+
+    /* ── DELETE BAR ── */
+    function updateDeleteBar() {
+      const bar = document.getElementById("deleteBar");
+      const count = selectedIds.size;
+      document.getElementById("selCount").textContent = count;
+      if (count > 0) bar.classList.add("show");
+      else bar.classList.remove("show");
+    }
+
+    document.getElementById("clearSelBtn").addEventListener("click", () => {
+      selectedIds.clear();
+      renderFlatList();
+    });
+
+    /* ── DELETE CONFIRM ── */
+    document.getElementById("deleteSelBtn").addEventListener("click", () => {
+      const count = selectedIds.size;
+      if (count === 0) return;
+
+      // List the flats being deleted
+      const names = [];
+      for (const id of selectedIds) {
+        const f = allFlats.find(x => x.id === id);
+        if (f) names.push(`${f.block} ${f.number}`);
+      }
+
+      document.getElementById("confirmText").innerHTML =
+        `You are about to <strong>permanently delete ${count} flat(s)</strong>:<br><br>` +
+        `<span style="font-size:12px;color:#555;">${names.join(', ')}</span><br><br>` +
+        `This action cannot be undone.`;
+
+      document.getElementById("confirmModal").classList.add("show");
+    });
+
+    document.getElementById("cancelDeleteBtn").addEventListener("click", () => {
+      document.getElementById("confirmModal").classList.remove("show");
+    });
+
+    document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+      document.getElementById("confirmModal").classList.remove("show");
+
+      const count = selectedIds.size;
+      try {
+        const promises = [];
+        for (const id of selectedIds) {
+          const flat = allFlats.find(f => f.id === id);
+          if (flat) {
+            const q = query(
+              collection(db, "flats"),
+              where("block", "==", flat.block),
+              where("number", "==", flat.number)
+            );
+            const snap = await getDocs(q);
+            snap.forEach(d => promises.push(deleteDoc(d.ref)));
+          }
+        }
+        await Promise.all(promises);
+        selectedIds.clear();
+        showToast(`Deleted ${count} flat(s) successfully`, "success");
+      } catch (err) {
+        showToast("Error: " + err.message, "error");
+      }
+    });
+
+    /* ── SEARCH ── */
+    document.getElementById("searchInput").addEventListener("input", e => {
+      searchTerm = e.target.value.trim();
+      renderFlatList();
+    });
+
+    /* ── ADD FLAT ── */
+    document.getElementById("addBtn").addEventListener("click", async () => {
+      const block = document.getElementById("blockInput").value;
+      const number = parseInt(document.getElementById("numberInput").value);
+      const occupant = document.getElementById("occupantInput").value;
+      const statusEl = document.getElementById("addStatus");
+
+      // Validation
+      if (!block) { showStatus("Select a block", "error"); return; }
+      if (isNaN(number) || number <= 0) { showStatus("Enter a valid flat number", "error"); return; }
+      if (!occupant) { showStatus("Select occupant type", "error"); return; }
+
+      // Duplicate check
+      const exists = allFlats.find(f => f.block === block && f.number === number);
+      if (exists) {
+        showStatus(`Flat ${block} ${number} already exists (${exists.occupant})`, "error");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "flats"), {
+          block,
+          number,
+          occupant,
+          completed: false
+        });
+        showStatus(`✅ Added ${block} ${number} (${occupant})`, "success");
+        // Clear inputs
+        document.getElementById("numberInput").value = "";
+        document.getElementById("numberInput").focus();
+      } catch (err) {
+        showStatus("Error: " + err.message, "error");
+      }
+    });
+
+    function showStatus(msg, type) {
+      const el = document.getElementById("addStatus");
+      el.textContent = msg;
+      el.className = "add-status " + type;
+      setTimeout(() => { el.className = "add-status"; }, 4000);
+    }
+
+  </script>
 </body>
+
 </html>
