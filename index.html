@@ -22,30 +22,30 @@
     }
 
     :root {
-      --bg-primary: #0f1117;
-      --bg-secondary: #1a1d27;
-      --bg-card: rgba(255, 255, 255, 0.04);
-      --bg-card-hover: rgba(255, 255, 255, 0.08);
-      --glass: rgba(255, 255, 255, 0.06);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --text-primary: #e8eaed;
-      --text-secondary: #9aa0a6;
-      --text-muted: #5f6368;
-      --accent-blue: #6e8efb;
-      --accent-purple: #a777e3;
-      --accent-green: #34d399;
-      --accent-orange: #fb923c;
-      --accent-red: #f87171;
-      --gradient-primary: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%);
-      --gradient-green: linear-gradient(135deg, #34d399 0%, #6ee7b7 100%);
-      --gradient-orange: linear-gradient(135deg, #fb923c 0%, #fbbf24 100%);
+      --bg-primary: #f0f2f5;
+      --bg-secondary: #ffffff;
+      --bg-card: rgba(255, 255, 255, 0.85);
+      --bg-card-hover: rgba(255, 255, 255, 1);
+      --glass: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --text-primary: #1a1a2e;
+      --text-secondary: #555770;
+      --text-muted: #8e90a6;
+      --accent-blue: #4f6df5;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --gradient-primary: linear-gradient(135deg, #4f6df5 0%, #8b5cf6 100%);
+      --gradient-green: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      --gradient-orange: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
       --radius-xl: 20px;
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-      --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
       --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -64,8 +64,8 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle at 30% 20%, rgba(110, 142, 251, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 70% 80%, rgba(167, 119, 227, 0.06) 0%, transparent 50%);
+      background: radial-gradient(circle at 25% 15%, rgba(79, 109, 245, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 75% 85%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
       z-index: 0;
       pointer-events: none;
     }
@@ -80,12 +80,12 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.15);
       border-radius: 3px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(0, 0, 0, 0.25);
     }
 
     /* ── Login Screen ────────────────────────────────── */
@@ -144,7 +144,7 @@
       padding: 48px 40px;
       width: 100%;
       max-width: 400px;
-      box-shadow: var(--shadow-lg);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
       backdrop-filter: blur(20px);
     }
 
@@ -160,7 +160,7 @@
       font-weight: 800;
       margin: 0 auto 24px;
       color: white;
-      box-shadow: 0 4px 16px rgba(110, 142, 251, 0.4);
+      box-shadow: 0 4px 16px rgba(79, 109, 245, 0.35);
     }
 
     .login-card h2 {
@@ -198,7 +198,7 @@
     .input-group input {
       width: 100%;
       padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-primary);
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
@@ -210,8 +210,8 @@
 
     .input-group input:focus {
       border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.15);
-      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.12);
+      background: #fff;
     }
 
     .input-group input::placeholder {
@@ -231,12 +231,12 @@
       cursor: pointer;
       transition: var(--transition);
       margin-top: 8px;
-      box-shadow: 0 4px 14px rgba(110, 142, 251, 0.35);
+      box-shadow: 0 4px 14px rgba(79, 109, 245, 0.3);
     }
 
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(110, 142, 251, 0.5);
+      box-shadow: 0 6px 20px rgba(79, 109, 245, 0.35);
     }
 
     .btn-primary:active {
@@ -317,8 +317,8 @@
 
     .btn-logout {
       padding: 8px 16px;
-      background: rgba(248, 113, 113, 0.12);
-      border: 1px solid rgba(248, 113, 113, 0.25);
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
       border-radius: var(--radius-sm);
       color: var(--accent-red);
       font-size: 12px;
@@ -329,8 +329,8 @@
     }
 
     .btn-logout:hover {
-      background: rgba(248, 113, 113, 0.2);
-      border-color: rgba(248, 113, 113, 0.4);
+      background: rgba(239, 68, 68, 0.14);
+      border-color: rgba(239, 68, 68, 0.35);
     }
 
     /* ── Stats Bar ───────────────────────────────────── */
@@ -395,7 +395,7 @@
     /* ── Overall Progress ────────────────────────────── */
     .progress-container {
       height: 8px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.06);
       border-radius: 10px;
       overflow: hidden;
       margin-bottom: 20px;
@@ -417,7 +417,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
       animation: shimmer 2s infinite;
     }
 
@@ -462,8 +462,8 @@
 
     .summary-card.active {
       border-color: var(--accent-blue);
-      background: rgba(110, 142, 251, 0.1);
-      box-shadow: 0 0 12px rgba(110, 142, 251, 0.15);
+      background: rgba(79, 109, 245, 0.06);
+      box-shadow: 0 2px 12px rgba(79, 109, 245, 0.1);
     }
 
     .summary-card.inactive {
@@ -501,7 +501,7 @@
 
     .summary-bar-bg {
       height: 4px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.06);
       margin-top: 6px;
       border-radius: 2px;
       overflow: hidden;
@@ -533,7 +533,7 @@
     #searchBox {
       width: 100%;
       padding: 11px 16px 11px 40px;
-      background: var(--bg-card);
+      background: #fff;
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
@@ -545,8 +545,8 @@
 
     #searchBox:focus {
       border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.1);
-      background: var(--bg-card-hover);
+      box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.1);
+      background: #fff;
     }
 
     #searchBox::placeholder {
@@ -578,14 +578,14 @@
     .filter-btn:hover {
       background: var(--bg-card-hover);
       color: var(--text-primary);
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(0, 0, 0, 0.15);
     }
 
     .filter-btn.active {
       background: var(--gradient-primary);
       color: white;
       border-color: transparent;
-      box-shadow: 0 2px 10px rgba(110, 142, 251, 0.3);
+      box-shadow: 0 2px 10px rgba(79, 109, 245, 0.25);
     }
 
     /* ── Textarea & Actions ──────────────────────────── */
@@ -593,7 +593,7 @@
       width: 100%;
       min-height: 60px;
       padding: 10px 14px;
-      background: var(--bg-card);
+      background: #fff;
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
@@ -607,7 +607,7 @@
 
     #inputData:focus {
       border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.1);
+      box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.1);
     }
 
     #inputData::placeholder {
@@ -655,34 +655,34 @@
     }
 
     .btn-clear {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.04);
       color: var(--text-secondary);
       border: 1px solid var(--glass-border);
     }
 
     .btn-clear:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(0, 0, 0, 0.08);
       color: var(--text-primary);
     }
 
     .btn-download {
-      background: rgba(110, 142, 251, 0.15);
+      background: rgba(79, 109, 245, 0.08);
       color: var(--accent-blue);
-      border: 1px solid rgba(110, 142, 251, 0.3);
+      border: 1px solid rgba(79, 109, 245, 0.2);
     }
 
     .btn-download:hover {
-      background: rgba(110, 142, 251, 0.25);
+      background: rgba(79, 109, 245, 0.15);
     }
 
     .btn-refresh {
-      background: rgba(167, 119, 227, 0.15);
+      background: rgba(139, 92, 246, 0.08);
       color: var(--accent-purple);
-      border: 1px solid rgba(167, 119, 227, 0.3);
+      border: 1px solid rgba(139, 92, 246, 0.2);
     }
 
     .btn-refresh:hover {
-      background: rgba(167, 119, 227, 0.25);
+      background: rgba(139, 92, 246, 0.15);
     }
 
     /* ── Toast Notification ──────────────────────────── */
@@ -739,7 +739,8 @@
     }
 
     .column:hover {
-      border-color: rgba(255, 255, 255, 0.15);
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-sm);
     }
 
     .column h4 {
@@ -747,7 +748,7 @@
       padding: 10px 12px;
       font-size: 12px;
       font-weight: 700;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(0, 0, 0, 0.02);
       text-align: center;
       color: var(--text-primary);
       letter-spacing: 0.5px;
@@ -768,7 +769,7 @@
 
     .block-progress-bg {
       height: 3px;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(0, 0, 0, 0.06);
     }
 
     .block-progress-fill {
@@ -781,7 +782,7 @@
       padding: 8px 10px;
       font-size: 11px;
       text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       cursor: pointer;
       display: flex;
       justify-content: center;
@@ -796,7 +797,7 @@
     }
 
     .cell:hover {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(79, 109, 245, 0.04);
     }
 
     .cell .flat-num {
@@ -820,34 +821,37 @@
     }
 
     .owner-badge {
-      background: rgba(52, 211, 153, 0.15);
+      background: rgba(16, 185, 129, 0.1);
       color: var(--accent-green);
     }
 
     .tenant-badge {
-      background: rgba(251, 146, 60, 0.15);
+      background: rgba(245, 158, 11, 0.1);
       color: var(--accent-orange);
     }
 
     .completed {
-      background: rgba(110, 142, 251, 0.15) !important;
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+      border-left: 3px solid #10b981;
     }
 
     .completed .flat-num {
-      color: var(--accent-blue) !important;
+      color: #047857 !important;
+      font-weight: 700;
     }
 
     .completed .badge {
-      opacity: 0.8;
+      opacity: 0.9;
     }
 
     .selected {
-      background: rgba(251, 146, 60, 0.2) !important;
+      background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
       border-left: 3px solid var(--accent-orange);
     }
 
     .selected .flat-num {
-      color: var(--accent-orange) !important;
+      color: #b45309 !important;
+      font-weight: 700;
     }
 
     /* ── Responsive ──────────────────────────────────── */
@@ -1069,17 +1073,6 @@
 
       logoutBtn.addEventListener("click", () => signOut(auth));
 
-      onAuthStateChanged(auth, user => {
-        if (user) {
-          loginDiv.style.display = "none";
-          appDiv.style.display = "block";
-          userEmail.innerText = user.email;
-        } else {
-          loginDiv.style.display = "flex";
-          appDiv.style.display = "none";
-        }
-      });
-
       /* ── MARK COMPLETED ── */
       document.getElementById("markBtn").addEventListener("click", async () => {
         if (selectedFlats.size === 0) {
@@ -1143,16 +1136,53 @@
         showToast("Data refreshed", "info");
       });
 
-      /* ── REALTIME LISTENER ── */
-      onSnapshot(collection(db, "flats"), snap => {
-        fullData = [];
-        snap.forEach(d => {
-          const data = d.data();
-          if (VALID_BLOCKS.includes(data.block)) {
-            fullData.push({ id: d.id, ...data });
-          }
+      /* ── REALTIME LISTENER (managed by auth state) ── */
+      let unsubscribeSnapshot = null;
+
+      function startRealtimeListener() {
+        // Unsubscribe any existing listener first
+        if (unsubscribeSnapshot) {
+          unsubscribeSnapshot();
+          unsubscribeSnapshot = null;
+        }
+        unsubscribeSnapshot = onSnapshot(collection(db, "flats"), snap => {
+          fullData = [];
+          snap.forEach(d => {
+            const data = d.data();
+            if (VALID_BLOCKS.includes(data.block)) {
+              fullData.push({ id: d.id, ...data });
+            }
+          });
+          render();
+        }, (error) => {
+          console.error("Firestore listener error:", error);
+          showToast("Error loading data. Please refresh.", "error");
         });
+      }
+
+      function stopRealtimeListener() {
+        if (unsubscribeSnapshot) {
+          unsubscribeSnapshot();
+          unsubscribeSnapshot = null;
+        }
+        fullData = [];
         render();
+      }
+
+      /* ── AUTH STATE — controls when listener starts/stops ── */
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          loginDiv.style.display = "none";
+          appDiv.style.display = "block";
+          userEmail.innerText = user.email;
+          // Start listening only after user is authenticated
+          startRealtimeListener();
+        } else {
+          loginDiv.style.display = "flex";
+          appDiv.style.display = "none";
+          // Stop listening when user logs out
+          stopRealtimeListener();
+        }
       });
 
       /* ── SEARCH ── */
