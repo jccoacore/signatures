@@ -409,7 +409,7 @@ function toggleSelection(flat){
 }
 
 /* MANUAL REFRESH */
-window.manualReload = async function(){
+async function manualReload(){
   const snap = await getDocs(collection(db,"flats"));
   fullData=[];
   snap.forEach(d=>{
