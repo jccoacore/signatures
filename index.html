@@ -87,9 +87,18 @@ h2 { margin-bottom:5px; }
   text-align:center;
   border-bottom:1px solid #eee;
   cursor:pointer;
+  display:flex;
+  justify-content:center;
+  gap:6px;
 }
+
 .owner { color:black; }
 .tenant { color:red; }
+
+.badge { font-weight:bold; }
+.owner-badge { color:green; }
+.tenant-badge { color:orange; }
+
 .completed { background:#1976d2; color:white !important; }
 .selected { background:orange; color:white !important; }
 
@@ -116,7 +125,6 @@ button {
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <h2>Login</h2>
   <input type="email" id="emailInput" placeholder="Email"><br>
@@ -125,7 +133,6 @@ button {
   <p id="loginError" style="color:red;"></p>
 </div>
 
-<!-- APP -->
 <div id="app">
   <h2>Block Tracker</h2>
   <p>Logged in as: <span id="userEmail"></span></p>
@@ -153,6 +160,12 @@ button {
     <button class="filter-btn" data-filter="TENANT">Tenants</button>
     <button class="filter-btn" data-filter="COMPLETED">Completed</button>
     <button class="filter-btn" data-filter="PENDING">Pending</button>
+
+    <!-- NEW Advanced Filters -->
+    <button class="filter-btn" data-filter="OWNER_COMPLETED">Owner+Completed</button>
+    <button class="filter-btn" data-filter="OWNER_PENDING">Owner+Pending</button>
+    <button class="filter-btn" data-filter="TENANT_COMPLETED">Tenant+Completed</button>
+    <button class="filter-btn" data-filter="TENANT_PENDING">Tenant+Pending</button>
   </div>
 
   <textarea id="inputData" placeholder="Selected flats"></textarea>
@@ -160,6 +173,7 @@ button {
   <button id="markBtn">Mark Completed</button>
   <button id="unmarkBtn">Unmark Completed</button>
   <button id="clearBtn">Clear Selection</button>
+  <button onclick="downloadSnapshot()">Download CSV Snapshot</button>
   <button onclick="manualReload()">Refresh</button>
 
   <div class="grid" id="grid"></div>
@@ -169,7 +183,7 @@ button {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, updateDoc, doc, onSnapshot }
+import { getFirestore, collection, updateDoc, doc, onSnapshot, getDocs }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -225,7 +239,12 @@ onAuthStateChanged(auth, user => {
 /* REALTIME */
 onSnapshot(collection(db,"flats"),snap=>{
   fullData=[];
-  snap.forEach(d=>fullData.push({id:d.id,...d.data()}));
+  snap.forEach(d=>{
+    const data=d.data();
+    if(VALID_BLOCKS.includes(data.block)){
+      fullData.push({id:d.id,...data});
+    }
+  });
   render();
 });
 
@@ -247,25 +266,34 @@ document.querySelectorAll(".filter-btn").forEach(btn=>{
   });
 });
 
-/* RENDER */
+/* APPLY FILTER */
 function applyFilter(data){
   let d=data.filter(x=>activeBlocks.has(x.block));
-  if(activeFilter==="OWNER") d=d.filter(x=>x.occupant==="Owner");
-  if(activeFilter==="TENANT") d=d.filter(x=>x.occupant==="Tenant");
-  if(activeFilter==="COMPLETED") d=d.filter(x=>x.completed);
-  if(activeFilter==="PENDING") d=d.filter(x=>!x.completed);
+
+  switch(activeFilter){
+    case "OWNER": d=d.filter(x=>x.occupant==="Owner"); break;
+    case "TENANT": d=d.filter(x=>x.occupant==="Tenant"); break;
+    case "COMPLETED": d=d.filter(x=>x.completed); break;
+    case "PENDING": d=d.filter(x=>!x.completed); break;
+    case "OWNER_COMPLETED": d=d.filter(x=>x.occupant==="Owner" && x.completed); break;
+    case "OWNER_PENDING": d=d.filter(x=>x.occupant==="Owner" && !x.completed); break;
+    case "TENANT_COMPLETED": d=d.filter(x=>x.occupant==="Tenant" && x.completed); break;
+    case "TENANT_PENDING": d=d.filter(x=>x.occupant==="Tenant" && !x.completed); break;
+  }
+
   if(searchTerm) d=d.filter(x=>x.number.toString().includes(searchTerm));
   return d;
 }
-
-function render(){
+  function render(){
   renderStats();
   renderDashboard();
+
   grid.innerHTML="";
   const filtered=applyFilter(fullData);
 
   VALID_BLOCKS.forEach(letter=>{
     if(!activeBlocks.has(letter)) return;
+
     const flats=filtered.filter(f=>f.block===letter);
 
     const total=fullData.filter(f=>f.block===letter).length;
@@ -283,12 +311,23 @@ function render(){
 
     flats.sort((a,b)=>a.number-b.number).forEach(entry=>{
       const key=entry.block+" "+entry.number;
+
+      const badge = entry.occupant==="Owner" ? "O" : "T";
+
       const cell=document.createElement("div");
       cell.className="cell "+
         (entry.completed?"completed ":"")+
         (entry.occupant==="Tenant"?"tenant":"owner");
+
       if(selectedFlats.has(key)) cell.classList.add("selected");
-      cell.innerText=key;
+
+      cell.innerHTML=`
+        <span>${key}</span>
+        <span class="badge ${badge==="O"?"owner-badge":"tenant-badge"}">
+          ${badge}
+        </span>
+      `;
+
       cell.onclick=()=>toggleSelection(key);
       col.appendChild(cell);
     });
@@ -297,17 +336,22 @@ function render(){
   });
 }
 
-/* DASHBOARD FILTER */
+/* DASHBOARD FILTER + BLOCK SUMMARY */
 function renderDashboard(){
   const container=document.getElementById("blockSummary");
   container.innerHTML="";
+
   VALID_BLOCKS.forEach(letter=>{
     const total=fullData.filter(f=>f.block===letter).length;
     const completed=fullData.filter(f=>f.block===letter && f.completed).length;
+    const owners=fullData.filter(f=>f.block===letter && f.occupant==="Owner").length;
+    const tenants=fullData.filter(f=>f.block===letter && f.occupant==="Tenant").length;
+
     const percent=total?Math.round((completed/total)*100):0;
 
     const card=document.createElement("div");
     card.className="summary-card";
+
     if(activeBlocks.has(letter)) card.classList.add("active");
     else card.classList.add("inactive");
 
@@ -315,6 +359,7 @@ function renderDashboard(){
       <div><b>${letter}</b></div>
       <div>${percent}%</div>
       <div>${completed}/${total}</div>
+      <div>O:${owners} T:${tenants}</div>
       <div class="summary-bar-bg">
         <div class="summary-bar-fill" style="width:${percent}%"></div>
       </div>
@@ -350,18 +395,23 @@ function renderStats(){
 function toggleSelection(flat){
   if(selectedFlats.has(flat)) selectedFlats.delete(flat);
   else selectedFlats.add(flat);
+
   inputData.value=Array.from(selectedFlats).join("\n");
   render();
 }
 
-
-async function manualReload(){
+/* MANUAL REFRESH */
+window.manualReload = async function(){
   const snap = await getDocs(collection(db,"flats"));
   fullData=[];
-  snap.forEach(d=>fullData.push({id:d.id,...d.data()}));
+  snap.forEach(d=>{
+    const data=d.data();
+    if(VALID_BLOCKS.includes(data.block)){
+      fullData.push({id:d.id,...data});
+    }
+  });
   render();
-}
-
+};
 
 /* ACTIONS */
 document.getElementById("markBtn").onclick=async()=>{
@@ -391,7 +441,18 @@ document.getElementById("clearBtn").onclick=()=>{
   inputData.value="";
   render();
 };
-</script>
 
-</body>
-</html>
+/* CSV SNAPSHOT */
+window.downloadSnapshot=function(){
+  let csv="Block,Flat Number,Occupant Type,Completed\n";
+  fullData.forEach(f=>{
+    csv+=`${f.block},${f.number},${f.occupant},${f.completed}\n`;
+  });
+
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="flats_snapshot.csv";
+  link.click();
+};
+
