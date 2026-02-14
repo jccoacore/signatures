@@ -665,6 +665,16 @@
       color: var(--text-primary);
     }
 
+    .btn-clipboard {
+      background: rgba(16, 185, 129, 0.08);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-clipboard:hover {
+      background: rgba(16, 185, 129, 0.15);
+    }
+
     .btn-download {
       background: rgba(79, 109, 245, 0.08);
       color: var(--accent-blue);
@@ -999,6 +1009,7 @@
       <button class="btn-action btn-mark" id="markBtn">✓ Mark Completed</button>
       <button class="btn-action btn-unmark" id="unmarkBtn">✗ Unmark</button>
       <button class="btn-action btn-clear" id="clearBtn">Clear Selection</button>
+      <button class="btn-action btn-clipboard" id="copyStatusBtn">📋 Copy Status</button>
       <button class="btn-action btn-download" id="downloadBtn">⬇ Download CSV</button>
       <button class="btn-action btn-refresh" id="refreshBtn">↻ Refresh</button>
     </div>
@@ -1349,6 +1360,83 @@
         link.click();
         showToast("CSV downloaded", "success");
       }
+
+      /* ── COPY STATUS TO CLIPBOARD ── */
+      document.getElementById("copyStatusBtn").addEventListener("click", async () => {
+        if (fullData.length === 0) {
+          showToast("No data to copy", "error");
+          return;
+        }
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+        const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+        const totalAll = fullData.length;
+        const completedAll = fullData.filter(f => f.completed).length;
+        const pendingAll = totalAll - completedAll;
+        const percentAll = totalAll ? Math.round((completedAll / totalAll) * 100) : 0;
+
+        let lines = [];
+        lines.push(`🏢 *JCC Block Tracker Status*`);
+        lines.push(`📅 ${dateStr} | 🕐 ${timeStr}`);
+        lines.push(``);
+        lines.push(`📊 *Overall: ${completedAll}/${totalAll} (${percentAll}%)*`);
+        lines.push(`✅ Done: ${completedAll}  |  ⏳ Pending: ${pendingAll}`);
+        lines.push(`${'━'.repeat(28)}`);
+
+        VALID_BLOCKS.forEach(letter => {
+          const blockFlats = fullData.filter(f => f.block === letter);
+          const total = blockFlats.length;
+          if (total === 0) return;
+
+          const completed = blockFlats.filter(f => f.completed).length;
+          const pending = total - completed;
+          const percent = Math.round((completed / total) * 100);
+          const owners = blockFlats.filter(f => f.occupant === "Owner").length;
+          const tenants = blockFlats.filter(f => f.occupant === "Tenant").length;
+          const ownerDone = blockFlats.filter(f => f.occupant === "Owner" && f.completed).length;
+          const tenantDone = blockFlats.filter(f => f.occupant === "Tenant" && f.completed).length;
+
+          // Visual progress bar
+          const filled = Math.round(percent / 10);
+          const bar = '▓'.repeat(filled) + '░'.repeat(10 - filled);
+
+          lines.push(``);
+          lines.push(`🔷 *Block ${letter}* — ${percent}%`);
+          lines.push(`${bar}  ${completed}/${total}`);
+          lines.push(`   👤 Owners: ${ownerDone}/${owners} ✅  |  🏠 Tenants: ${tenantDone}/${tenants} ✅`);
+          if (pending > 0) {
+            const pendingFlats = blockFlats
+              .filter(f => !f.completed)
+              .sort((a, b) => a.number - b.number)
+              .map(f => f.number);
+            lines.push(`   ⏳ Pending (${pending}): ${pendingFlats.join(', ')}`);
+          }
+        });
+
+        lines.push(``);
+        lines.push(`${'━'.repeat(28)}`);
+        lines.push(`_Generated from Block Tracker_`);
+
+        const text = lines.join('\n');
+
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("Status copied to clipboard! 📋", "success");
+        } catch (err) {
+          // Fallback for older browsers
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+          showToast("Status copied to clipboard! 📋", "success");
+        }
+      });
 
     });
   </script>
