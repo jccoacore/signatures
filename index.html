@@ -336,17 +336,17 @@
     /* ── Stats Bar ───────────────────────────────────── */
     .stat-box {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .stat-item {
       flex: 1;
-      min-width: 120px;
+      min-width: 90px;
       background: var(--bg-card);
       border: 1px solid var(--glass-border);
-      padding: 14px 18px;
+      padding: 10px 12px;
       border-radius: var(--radius-md);
       backdrop-filter: blur(10px);
       transition: var(--transition);
@@ -354,21 +354,21 @@
 
     .stat-item:hover {
       background: var(--bg-card-hover);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
       box-shadow: var(--shadow-sm);
     }
 
     .stat-item .stat-label {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .stat-item .stat-value {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
     }
 
@@ -394,16 +394,16 @@
 
     /* ── Overall Progress ────────────────────────────── */
     .progress-container {
-      height: 8px;
+      height: 6px;
       background: rgba(0, 0, 0, 0.06);
       border-radius: 10px;
       overflow: hidden;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
       position: relative;
     }
 
     .progress-bar {
-      height: 8px;
+      height: 6px;
       background: var(--gradient-primary);
       border-radius: 10px;
       transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -434,18 +434,18 @@
     /* ── Block Summary Cards ─────────────────────────── */
     #blockSummary {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .summary-card {
-      min-width: 90px;
+      min-width: 70px;
       flex: 1;
-      padding: 12px 10px;
+      padding: 8px 6px;
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
-      font-size: 11px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
       text-align: center;
       cursor: pointer;
       background: var(--bg-card);
@@ -472,43 +472,43 @@
     }
 
     .summary-card .card-letter {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 800;
       background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 4px;
-    }
-
-    .summary-card .card-percent {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
       margin-bottom: 2px;
     }
 
+    .summary-card .card-percent {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1px;
+    }
+
     .summary-card .card-count {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-secondary);
     }
 
     .summary-card .card-ot {
-      font-size: 9px;
+      font-size: 8px;
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .summary-bar-bg {
-      height: 4px;
+      height: 3px;
       background: rgba(0, 0, 0, 0.06);
-      margin-top: 6px;
+      margin-top: 4px;
       border-radius: 2px;
       overflow: hidden;
     }
 
     .summary-bar-fill {
-      height: 4px;
+      height: 3px;
       background: var(--gradient-green);
       border-radius: 2px;
       transition: width 0.5s ease;
@@ -735,16 +735,15 @@
     /* ── Grid ────────────────────────────────────────── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(11, 1fr);
+      gap: 6px;
     }
 
     .column {
       background: var(--bg-card);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       overflow: hidden;
-      backdrop-filter: blur(10px);
       transition: var(--transition);
     }
 
@@ -755,49 +754,49 @@
 
     .column h4 {
       margin: 0;
-      padding: 10px 12px;
-      font-size: 12px;
+      padding: 6px 4px;
+      font-size: 10px;
       font-weight: 700;
       background: rgba(0, 0, 0, 0.02);
       text-align: center;
       color: var(--text-primary);
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
 
     .column h4 .col-percent {
-      font-size: 10px;
+      font-size: 8px;
       font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 10px;
+      padding: 1px 5px;
+      border-radius: 8px;
       background: var(--gradient-primary);
       color: white;
     }
 
     .block-progress-bg {
-      height: 3px;
+      height: 2px;
       background: rgba(0, 0, 0, 0.06);
     }
 
     .block-progress-fill {
-      height: 3px;
+      height: 2px;
       background: var(--gradient-green);
       transition: width 0.5s ease;
     }
 
     .cell {
-      padding: 8px 10px;
-      font-size: 11px;
+      padding: 4px 3px;
+      font-size: 9px;
       text-align: center;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
       cursor: pointer;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: 3px;
       transition: var(--transition);
       user-select: none;
     }
@@ -824,10 +823,10 @@
 
     .badge {
       font-weight: 700;
-      font-size: 9px;
-      padding: 1px 6px;
-      border-radius: 4px;
-      letter-spacing: 0.5px;
+      font-size: 8px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.3px;
     }
 
     .owner-badge {
@@ -865,38 +864,99 @@
     }
 
     /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+      }
+    }
+
     @media (max-width: 768px) {
       #app {
-        padding: 12px 14px 30px;
+        padding: 10px 10px 24px;
       }
 
       .app-header {
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         align-items: flex-start;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
       }
 
-      .stat-item {
-        min-width: 80px;
-        padding: 10px 12px;
-      }
-
-      .stat-item .stat-value {
+      .app-header h2 {
         font-size: 18px;
       }
 
+      .stat-box {
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
+      .stat-item {
+        min-width: 60px;
+        padding: 8px 8px;
+      }
+
+      .stat-item .stat-label {
+        font-size: 9px;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-item .stat-value {
+        font-size: 16px;
+      }
+
+      .summary-card {
+        min-width: 55px;
+        padding: 6px 4px;
+      }
+
+      .summary-card .card-letter {
+        font-size: 12px;
+      }
+
+      .summary-card .card-percent {
+        font-size: 10px;
+      }
+
+      .summary-card .card-count {
+        font-size: 8px;
+      }
+
+      .summary-card .card-ot {
+        display: none;
+      }
+
       .grid {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 8px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+      }
+
+      .filter-row {
+        gap: 4px;
+        margin-bottom: 10px;
+      }
+
+      .filter-btn {
+        padding: 5px 10px;
+        font-size: 10px;
       }
 
       .action-row {
-        gap: 6px;
+        gap: 5px;
+        margin-bottom: 14px;
       }
 
       .btn-action {
-        padding: 8px 12px;
+        padding: 7px 10px;
+        font-size: 10px;
+      }
+
+      #inputData {
+        min-height: 40px;
         font-size: 11px;
+        margin-bottom: 8px;
       }
     }
 
@@ -905,6 +965,65 @@
         padding: 32px 24px;
       }
 
+      .stat-box {
+        gap: 4px;
+      }
+
+      .stat-item {
+        min-width: 50px;
+        padding: 6px 6px;
+      }
+
+      .stat-item .stat-value {
+        font-size: 14px;
+      }
+
+      #blockSummary {
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+
+      .summary-card {
+        min-width: 45px;
+        padding: 5px 3px;
+      }
+
+      .summary-card .card-letter {
+        font-size: 11px;
+      }
+
+      .summary-card .card-percent {
+        font-size: 9px;
+      }
+
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+      }
+
+      .cell {
+        padding: 4px 2px;
+        font-size: 9px;
+        gap: 2px;
+      }
+
+      .badge {
+        font-size: 7px;
+        padding: 1px 3px;
+      }
+
+      .column h4 {
+        padding: 5px 3px;
+        font-size: 9px;
+      }
+
+      .column h4 .col-percent {
+        font-size: 7px;
+        padding: 1px 4px;
+      }
+    }
+
+    @media (max-width: 360px) {
       .grid {
         grid-template-columns: repeat(2, 1fr);
       }
