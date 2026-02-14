@@ -1526,11 +1526,20 @@
           lines.push(`${bar}  ${completed}/${total}`);
           lines.push(`   👤 Owners: ${ownerDone}/${owners} ✅  |  🏠 Tenants: ${tenantDone}/${tenants} ✅`);
           if (pending > 0) {
-            const pendingFlats = blockFlats
-              .filter(f => !f.completed)
+            const pendingOwners = blockFlats
+              .filter(f => !f.completed && f.occupant === "Owner")
               .sort((a, b) => a.number - b.number)
               .map(f => f.number);
-            lines.push(`   ⏳ Pending (${pending}): ${pendingFlats.join(', ')}`);
+            const pendingTenants = blockFlats
+              .filter(f => !f.completed && f.occupant === "Tenant")
+              .sort((a, b) => a.number - b.number)
+              .map(f => f.number);
+            if (pendingOwners.length > 0) {
+              lines.push(`   ⏳ Pending Owners (${pendingOwners.length}): ${pendingOwners.join(', ')}`);
+            }
+            if (pendingTenants.length > 0) {
+              lines.push(`   ⏳ Pending Tenants (${pendingTenants.length}): ${pendingTenants.join(', ')}`);
+            }
           }
         });
 
