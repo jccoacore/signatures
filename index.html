@@ -1406,6 +1406,8 @@
           const completed = fullData.filter(f => f.block === letter && f.completed).length;
           const owners = fullData.filter(f => f.block === letter && f.occupant === "Owner").length;
           const tenants = fullData.filter(f => f.block === letter && f.occupant === "Tenant").length;
+          const ownersCompleted = fullData.filter(f => f.block === letter && f.occupant === "Owner" && f.completed).length;
+          const tenantsCompleted = fullData.filter(f => f.block === letter && f.occupant === "Tenant" && f.completed).length;
           const percent = total ? Math.round((completed / total) * 100) : 0;
 
           const card = document.createElement("div");
@@ -1417,7 +1419,7 @@
       <div class="card-letter">${letter}</div>
       <div class="card-percent">${percent}%</div>
       <div class="card-count">${completed}/${total}</div>
-      <div class="card-ot">O:${owners} T:${tenants}</div>
+      <div class="card-ot">O: ${ownersCompleted}/${owners} <br> T: ${tenantsCompleted}/${tenants}</div>
       <div class="summary-bar-bg">
         <div class="summary-bar-fill" style="width:${percent}%"></div>
       </div>
@@ -1438,12 +1440,14 @@
         const completed = fullData.filter(f => f.completed).length;
         const owners = fullData.filter(f => f.occupant === "Owner").length;
         const tenants = fullData.filter(f => f.occupant === "Tenant").length;
+        const ownersCompleted = fullData.filter(f => f.occupant === "Owner" && f.completed).length;
+        const tenantsCompleted = fullData.filter(f => f.occupant === "Tenant" && f.completed).length;
         const percent = total ? Math.round((completed / total) * 100) : 0;
 
         document.getElementById("socTotal").innerText = total;
         document.getElementById("socCompleted").innerText = completed;
-        document.getElementById("socOwners").innerText = owners;
-        document.getElementById("socTenants").innerText = tenants;
+        document.getElementById("socOwners").innerText = `${ownersCompleted}/${owners}`;
+        document.getElementById("socTenants").innerText = `${tenantsCompleted}/${tenants}`;
         document.getElementById("socPercent").innerText = percent + "%";
         document.getElementById("overallBar").style.width = percent + "%";
       }
